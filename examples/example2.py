@@ -38,8 +38,8 @@ parameters=[
         name="lr",
         parameter_type="double",
         feasible_space=FeasibleSpace(
-            min="0.01",
-            max="0.06"
+            min="0.001",
+            max="0.1"
         ),
     ),
     ParameterSpec(
@@ -47,7 +47,7 @@ parameters=[
         parameter_type="double",
         feasible_space=FeasibleSpace(
             min="0.5",
-            max="0.9"
+            max="0.99"
         ),
     ),
 ]
@@ -71,7 +71,7 @@ trial_spec={
                         "command": [
                             "python3",
                             "/opt/pytorch-mnist/mnist.py",
-                            "--epochs=1",
+                            "--epochs=100",
                             "--batch-size=64",
                             "--lr=${trialParameters.learningRate}",
                             "--momentum=${trialParameters.momentum}",
