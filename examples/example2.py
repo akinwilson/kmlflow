@@ -116,4 +116,8 @@ experiment = V1beta1Experiment(
         parameters=parameters,
         trial_template=trial_template,
     )
-)
+)# Create Katib client.
+kclient = KatibClient()
+
+# Create your Experiment.
+kclient.create_experiment(experiment,namespace=namespace)
