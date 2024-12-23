@@ -116,7 +116,15 @@ experiment = Experiment(
         trial_template=trial_template,
     )
 )# Create Katib client.
-kclient = KatibClient()
+kclient = KatibClient(namespace='kubeflow')
 
 # Create your Experiment.
 kclient.create_experiment(experiment,namespace=namespace)
+
+# Wait until Katib Experiment is complete
+kclient.wait_for_experiment_condition(name=name)
+
+# Get the best hyperparameters.
+print(kclient.get_optimal_hyperparameters(name))
+
+
