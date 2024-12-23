@@ -47,7 +47,8 @@ and
 python examples/example2.py
 ```
 
+
 ## To do 23 Dec 2024
-- [] Remove hardcoded persistent volume host filepath and allow for dynamic substitution 
-- [] Add custom training dockerfile to use with experiments to repo
-- [] add own container example to the repository 
+1) Remove hardcoded persistent volume host filepath and allow for dynamic substitution.
+2) Add custom training dockerfile to use with experiments to repo.
+3) allow for training via the GPU.
