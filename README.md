@@ -2,10 +2,6 @@
 
 ![](img/kflow.jpg 'locally-kubeflow')
 
-## To do 23 Dec 2024
-- [] Remove hardcoded persistent volume host filepath and allow for dynamic substitution 
-- [] Add custom training dockerfile to use with experiments to repo
-- [] add own container example to the repository 
 ## Overview 
 
 Kflow is project that allows end users to locally deploy a [Kubeflow](https://www.kubeflow.org/) component, [Katib](https://www.kubeflow.org/docs/components/katib/overview/) the [hyperparameter optimisation](https://en.wikipedia.org/wiki/Hyperparameter_optimization) framework, using [Docker](https://www.docker.com/), [Kind](https://kind.sigs.k8s.io/) and [kubectl](https://kubernetes.io/docs/reference/kubectl/). This repository demonstrates how to use this experiment tracking and hyperparameter optimisation framework. 
@@ -35,6 +31,10 @@ To configure a multi-node k8s cluster whom hosts the Katib service. Check the cl
 http://localhost:8080/katib/
 ```
 
+To destroy the cluster and therewith remove the Katib service, run:
+```bash 
+./app/remove.sh
+```
 
 ## Usage 
 
@@ -46,3 +46,8 @@ and
 ```
 python examples/example2.py
 ```
+
+## To do 23 Dec 2024
+- [] Remove hardcoded persistent volume host filepath and allow for dynamic substitution 
+- [] Add custom training dockerfile to use with experiments to repo
+- [] add own container example to the repository 
