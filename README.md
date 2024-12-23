@@ -2,9 +2,9 @@
 
 ![](img/kflow.jpg 'locally-kubeflow')
 
-# To do 23 Dec 2024
-- [] Remove hardcode persistent volume claim host filepath 
-- [] Add images of experiements to repo
+## To do 23 Dec 2024
+- [] Remove hardcoded persistent volume host filepath and allow for dynamic substitution 
+- [] Add custom training dockerfile to use with experiments to repo
 - [] add own container example to the repository 
 ## Overview 
 
@@ -14,7 +14,7 @@ Kflow is project that allows end users to locally deploy a [Kubeflow](https://ww
 ## Installation
 
 
-Clone the repository and create a virtual enviornment and install the requirements: 
+Clone the repository and create a virtual environment and install the requirements: 
 
 ```
 pip install -r requirements.txt
@@ -30,7 +30,7 @@ Deploy the application by then running
 ./app/deploy.sh
 ```
 
-To configure a multi-node k8s cluster whom hosts the katlib service. Check the cli output for information on how to access the UI through the web. It should be accessible from
+To configure a multi-node k8s cluster whom hosts the Katib service. Check the cli output for information on how to access the UI through the web. It should be accessible from
 ```
 http://localhost:8080/katib/
 ```
@@ -38,7 +38,7 @@ http://localhost:8080/katib/
 
 ## Usage 
 
-The `examples/` folder contains `python` code where a deep learning experiment is set up and run, using the katib SDK. Running the examples will populate the user interface with experiemental data. The examples demonstrate how to set up experiments for optimisation problems face in machine learning.  
+The `examples/` folder contains `python` code where a deep learning experiment is set up and run, using the katib SDK. Running the examples will populate the user interface with experimental data. The examples demonstrate how to set up experiments for optimization problems face in machine learning.  
 ```
 python examples/example1.py
 ```

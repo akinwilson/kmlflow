@@ -1,1 +1,1 @@
-The associated confiugration files demonstrate how to, locally, deploy components of the Kubeflow, particularly katib.
+The associated configuration files deploy a component of the Kubeflow, Katib, alongside a cluster dashboard.  
