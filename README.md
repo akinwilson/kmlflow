@@ -5,7 +5,7 @@
 # To do 23 Dec 2024
 - [] Remove hardcode persistent volume claim host filepath 
 - [] Add images of experiements to repo
-- [] 
+- [] add own container example to the repository 
 ## Overview 
 
 Kflow is project that allows end users to locally deploy [Kubeflow](https://www.kubeflow.org/) components, particularly [Katib](https://www.kubeflow.org/docs/components/katib/overview/) the [hyperparameter optimisation](https://en.wikipedia.org/wiki/Hyperparameter_optimization) framework, using [Docker](https://www.docker.com/), [Kind](https://kind.sigs.k8s.io/) and [kubectl](https://kubernetes.io/docs/reference/kubectl/).

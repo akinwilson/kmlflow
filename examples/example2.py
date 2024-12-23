@@ -1,33 +1,32 @@
 import copy
 
 from kubeflow.katib import KatibClient
-from kubernetes.client import V1ObjectMeta
-from kubeflow.katib import V1beta1Experiment
-from kubeflow.katib import V1beta1AlgorithmSpec
-from kubeflow.katib import V1beta1ObjectiveSpec
-from kubeflow.katib import V1beta1FeasibleSpace
-from kubeflow.katib import V1beta1ExperimentSpec
-from kubeflow.katib import V1beta1ObjectiveSpec
-from kubeflow.katib import V1beta1ParameterSpec
-from kubeflow.katib import V1beta1TrialTemplate
-from kubeflow.katib import V1beta1TrialParameterSpec
+from kubernetes.client import V1ObjectMeta as ObjectMeta
+from kubeflow.katib import V1beta1Experiment as Experiment
+from kubeflow.katib import V1beta1AlgorithmSpec as AlgorithmSpec
+from kubeflow.katib import V1beta1ObjectiveSpec as ObjectiveSpec
+from kubeflow.katib import V1beta1FeasibleSpace as FeasibleSpace
+from kubeflow.katib import V1beta1ExperimentSpec as ExperimentSpec
+from kubeflow.katib import V1beta1ParameterSpec as ParameterSpec
+from kubeflow.katib import V1beta1TrialTemplate as TrialTemplate
+from kubeflow.katib import V1beta1TrialParameterSpec as TrialParameterSpec
 
 # Experiment name and namespace.
 namespace = "kubeflow"
 experiment_name = "cmaes"
 
-metadata = V1ObjectMeta(
+metadata = ObjectMeta(
     name=experiment_name,
     namespace=namespace
 )
 
 # Algorithm specification.
-algorithm_spec=V1beta1AlgorithmSpec(
+algorithm_spec= AlgorithmSpec(
     algorithm_name="cmaes"
 )
 
 # Objective specification.
-objective_spec=V1beta1ObjectiveSpec(
+objective_spec=ObjectiveSpec(
     type="minimize",
     goal= 0.001,
     objective_metric_name="loss",
@@ -35,18 +34,18 @@ objective_spec=V1beta1ObjectiveSpec(
 
 # Experiment search space. In this example we tune learning rate, number of layer and optimizer.
 parameters=[
-    V1beta1ParameterSpec(
+    ParameterSpec(
         name="lr",
         parameter_type="double",
-        feasible_space=V1beta1FeasibleSpace(
+        feasible_space=FeasibleSpace(
             min="0.01",
             max="0.06"
         ),
     ),
-    V1beta1ParameterSpec(
+    ParameterSpec(
         name="momentum",
         parameter_type="double",
-        feasible_space=V1beta1FeasibleSpace(
+        feasible_space=FeasibleSpace(
             min="0.5",
             max="0.9"
         ),
@@ -86,15 +85,15 @@ trial_spec={
 }
 
 # Configure parameters for the Trial template.
-trial_template=V1beta1TrialTemplate(
+trial_template=TrialTemplate(
     primary_container_name="training-container",
     trial_parameters=[
-        V1beta1TrialParameterSpec(
+        TrialParameterSpec(
             name="learningRate",
             description="Learning rate for the training model",
             reference="lr"
         ),
-        V1beta1TrialParameterSpec(
+        TrialParameterSpec(
             name="momentum",
             description="Momentum for the training model",
             reference="momentum"
@@ -103,13 +102,13 @@ trial_template=V1beta1TrialTemplate(
     trial_spec=trial_spec
 )
 # Experiment object.
-experiment = V1beta1Experiment(
+experiment = Experiment(
     api_version="kubeflow.org/v1beta1",
     kind="Experiment",
     metadata=metadata,
-    spec=V1beta1ExperimentSpec(
-        max_trial_count=3,
-        parallel_trial_count=2,
+    spec=ExperimentSpec(
+        max_trial_count=16,
+        parallel_trial_count=4,
         max_failed_trial_count=1,
         algorithm=algorithm_spec,
         objective=objective_spec,
