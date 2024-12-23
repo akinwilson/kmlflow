@@ -1,4 +1,4 @@
-import copy
+# import copy
 
 from kubeflow.katib import KatibClient
 from kubernetes.client import V1ObjectMeta as ObjectMeta
@@ -13,7 +13,7 @@ from kubeflow.katib import V1beta1TrialParameterSpec as TrialParameterSpec
 
 # Experiment name and namespace.
 namespace = "kubeflow"
-experiment_name = "cmaes"
+experiment_name = "mnist-bayesianoptimization-v2"
 
 metadata = ObjectMeta(
     name=experiment_name,
@@ -21,8 +21,9 @@ metadata = ObjectMeta(
 )
 
 # Algorithm specification.
+
 algorithm_spec= AlgorithmSpec(
-    algorithm_name="cmaes"
+    algorithm_name="bayesianoptimization"
 )
 
 # Objective specification.
@@ -71,7 +72,7 @@ trial_spec={
                         "command": [
                             "python3",
                             "/opt/pytorch-mnist/mnist.py",
-                            "--epochs=100",
+                            "--epochs=2",
                             "--batch-size=64",
                             "--lr=${trialParameters.learningRate}",
                             "--momentum=${trialParameters.momentum}",
@@ -122,9 +123,9 @@ kclient = KatibClient(namespace='kubeflow')
 kclient.create_experiment(experiment,namespace=namespace)
 
 # Wait until Katib Experiment is complete
-kclient.wait_for_experiment_condition(name=name)
+kclient.wait_for_experiment_condition(name=metadata.name)
 
 # Get the best hyperparameters.
-print(kclient.get_optimal_hyperparameters(name))
+print(kclient.get_optimal_hyperparameters(metadata.name))
 
 
