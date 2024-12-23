@@ -17,10 +17,10 @@ parameters = {
 }
 
 # [3] Create Katib Experiment with 12 Trials and 2 CPUs per Trial.
-katib_client = katib.KatibClient(namespace="kubeflow")
+kclient = katib.KatibClient(namespace="kubeflow")
 
 name = "tune-experiment"
-katib_client.tune(
+kclient.tune(
     name=name,
     objective=objective,
     parameters=parameters,
@@ -30,7 +30,7 @@ katib_client.tune(
 )
 
 # [4] Wait until Katib Experiment is complete
-katib_client.wait_for_experiment_condition(name=name)
+kclient.wait_for_experiment_condition(name=name)
 
 # [5] Get the best hyperparameters.
-print(katib_client.get_optimal_hyperparameters(name))
+print(kclient.get_optimal_hyperparameters(name))
