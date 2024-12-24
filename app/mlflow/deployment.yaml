@@ -11,35 +11,35 @@ metadata:
   namespace: mlflow 
   labels:
     app: mlflow
-  spec:
-    replicas: 2
-    selector:
-      matchLabels:
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mlflow 
+  template:
+    metadata:
+      labels:
         app: mlflow 
-    template:
-      metadata:
-        labels:
-          app: mlflow 
-      spec:
-        serviceAccountName: mlflow-sa
-        containers:
-        - name: mlflow
-          image: akinolawilson/mlflow:latest
-          imagePullPolicy: Always 
-          command: ["/bin/bash"]
-          args:
-            ["mlflow server --host 0.0.0.0 --port 5001 --backend-store-uri sqlite:///meta.db"] # --artifacts-destination s3://my-bucket 
-          
-          volumeMounts:
-          - mountPath: /usr/src/app
-            name: pv-data
-        volumes:
-        - name: pv-data
-          persistentVolumeClaim:
-            claimName: pvc-data
-                          
-            ports:
-              - containerPort: 5001
+    spec:
+      serviceAccountName: mlflow-sa
+      containers:
+      - name: mlflow
+        image: akinolawilson/mlflow:latest
+        imagePullPolicy: Always 
+        command: ["/bin/bash"]
+        args:
+          ["mlflow server --host 0.0.0.0 --port 5001 --backend-store-uri sqlite:///meta.db"] # --artifacts-destination s3://my-bucket 
+        ports:
+          - containerPort: 5001
+        
+        volumeMounts:
+        - mountPath: /usr/src/app
+          name: pv-data
+
+      volumes:
+      - name: pv-data
+        persistentVolumeClaim:
+          claimName: pvc-data
 
 
 
