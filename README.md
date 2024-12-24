@@ -26,7 +26,7 @@ Deploy the application to a multi-node k8s cluster by then running
 ./app/deploy.sh
 ```
 
-Check the cli output for information on how to access the UI through the web. Hyperparameter experiment results should be accessible from
+Check the cli output for information on how to access the UIs through a web browser. Hyperparameter experiment results should be accessible from
 ```
 http://localhost:8080/katib/
 ```
