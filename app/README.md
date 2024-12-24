@@ -1,1 +1,1 @@
-The associated configuration files deploy a component of the Kubeflow, Katib, alongside a cluster dashboard.  
+The scripts `deploy.sh` and `remove.sh` are used in tandem to deploy the katib and mlflow services and remove them respectively. The folders `katib` and `mlflow` contain the necessary `yaml` manifest files to provision these services on a local kubernetes cluster. 
