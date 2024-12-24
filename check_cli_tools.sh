@@ -18,4 +18,4 @@ if [ -z "$(command -v kubectl)" ]; then
   exit 1
 fi
 
-echo "You have all CLI tools required, ready to deploy Katlib locally"
+echo "You have all CLI tools required, ready to deploy Katib and MLflow locally"
