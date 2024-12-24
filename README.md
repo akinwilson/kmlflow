@@ -54,8 +54,8 @@ python examples/example2.py
 ```
 
 
-## To do 23 Dec 2024
+## To do 24 Dec 2024
 1) Remove hardcoded persistent volume host filepath and allow for dynamic substitution.
 2) Add custom training dockerfile to use with experiments to repo.
 3) allow for training via the GPU.
-4) Include the deployment of an MLFlow sever to allow for 
+4) Include the deployment of an MLFlow server to allow tracking model artifacts. 
