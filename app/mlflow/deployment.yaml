@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ServiceAccount 
+metadata:
+  name: mlflow-sa 
+  namespace: mlflow 
+--
+apiVersion: apps/v1
+kind: Deployment 
+metadata:
+  name: mlflow-deployment 
+  namespace: mlflow 
+  labels:
+    app: mlflow
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: mlflow 
+    template:
+      metadata:
+        labels:
+          app: mlflow 
+      spec:
+        serviceAccountName: mlflow-sa
+        containers:
+          - name: mlflow
+            image: akinolawilson/mlflow:latest
+            imagePullPolicy: Always 
+            command: ["/bin/bash"]
+            args:
+              ["mlflow server --host 0.0.0.0 --default-artifact-root --port 5001  --default-artifact-root ${MLFLOW_S3_ENDPOINT_URL} --backend-store-uri ${MLFLOW_TRACKING_URI}"]
+            ports:
+              - containerPort: 5001 
+              
+
