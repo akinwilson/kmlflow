@@ -98,10 +98,20 @@ def evaluate(dataloader, model, loss_fn, metrics_fn, epoch):
 if __name__ == "__main__":
     
 
-    # Get cpu or gpu for training.
-    device = "cuda" if torch.cuda.is_available() else "cpu"
 
     parser = ArgumentParser()
+    parser.add_argument('-lr', '--learning-rate', help="Learning rate for optimisation process, i.e. step size", default=1e-3)
+    parser.add_argument('-bs', '--batch-size', help="Sample size of to approximate gradient with during stochastic gradient descent algorithm", default=64)
+    parser.add_argument('-e', '--epochs', help="Maxmium number of fitting dataset iterations. I.e. capping the fitting routine", default=10)
+    
+    parser.add_argument('-t', '--tracking-server-uri', help='Tracking server URI/URL used by client', default='http://localhost:5000')
+    parser.add_argument('-ex', '--experiment-name', help='The name to assign to collection of runs making up the experiment.', default='mnist-mini-CNN')
+    # Notice we start and experiment, this experiment may have more than one trial/run.  
+
+    args = parser.parse_args()
+
+    # Get cpu or gpu for training.
+    device = "cuda" if torch.cuda.is_available() else "cpu"
 
     training_data = datasets.FashionMNIST(
         root="data",
@@ -121,12 +131,12 @@ if __name__ == "__main__":
     print(f"Size of test dataset: {len(test_data)}")
 
 
-    train_dataloader = DataLoader(training_data, batch_size=64)
-    test_dataloader = DataLoader(test_data, batch_size=64)
+    train_dataloader = DataLoader(training_data, batch_size=args.batch_size)
+    test_dataloader = DataLoader(test_data, batch_size=args.batch_size)
 
 
-    mlflow.set_tracking_uri("http://localhost:5000")
-    mlflow.set_experiment("mnist-trial-mini-model")
+    mlflow.set_tracking_uri(args.tracking_server_uri)
+    mlflow.set_experiment(args.experiment_name)
 
 
     epochs = 5
