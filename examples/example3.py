@@ -1,262 +1,164 @@
-# Populate model registry and tracking server with experiment data
-
-
-
-
-
-
-
-import os
-
-import lightning as L
 import torch
-from lightning.pytorch.callbacks import EarlyStopping, LearningRateMonitor, ModelCheckpoint
-from lightning.pytorch.cli import LightningCLI
-from torch.nn import functional as F
-from torch.utils.data import DataLoader, random_split
-from torchmetrics.functional import accuracy
-from torchvision import datasets, transforms
+from torch import nn
+from torch.utils.data import DataLoader
+from torchinfo import summary
+from torchmetrics import Accuracy
+from torchvision import datasets
+from torchvision.transforms import ToTensor
+from argsparse import ArgumentParser 
+import mlflow
 
-import mlflow.pytorch
 
 
-class MNISTDataModule(L.LightningDataModule):
-    def __init__(self, batch_size=64, num_workers=3):
-        """
-        Initialization of inherited lightning data module
-        """
+
+class ImageClassifier(nn.Module):
+    def __init__(self):
         super().__init__()
-        self.df_train = None
-        self.df_val = None
-        self.df_test = None
-        self.train_data_loader = None
-        self.val_data_loader = None
-        self.test_data_loader = None
-        self.batch_size = batch_size
-        self.num_workers = num_workers
-
-        # transforms for images
-        self.transform = transforms.Compose(
-            [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
+        self.model = nn.Sequential(
+            nn.Conv2d(1, 8, kernel_size=3),
+            nn.ReLU(),
+            nn.Conv2d(8, 16, kernel_size=3),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.LazyLinear(10),  # 10 classes in total.
         )
-
-    def setup(self, stage=None):
-        """
-        Downloads the data, parse it and split the data into train, test, validation data
-
-        Args:
-            stage: Stage - training or testing
-        """
-
-        self.df_train = datasets.MNIST(
-            "dataset", download=True, train=True, transform=self.transform
-        )
-        self.df_train, self.df_val = random_split(self.df_train, [55000, 5000])
-        self.df_test = datasets.MNIST(
-            "dataset", download=True, train=False, transform=self.transform
-        )
-
-    def create_data_loader(self, df):
-        """
-        Generic data loader function
-
-        Args:
-            df: Input tensor
-
-        Returns:
-            Returns the constructed dataloader
-        """
-        return DataLoader(df, batch_size=self.batch_size, num_workers=self.num_workers)
-
-    def train_dataloader(self):
-        """
-        Returns:
-            output: Train data loader for the given input.
-        """
-        return self.create_data_loader(self.df_train)
-
-    def val_dataloader(self):
-        """
-        Returns:
-            output: Validation data loader for the given input.
-        """
-        return self.create_data_loader(self.df_val)
-
-    def test_dataloader(self):
-        """
-        Returns:
-            output: Test data loader for the given input.
-        """
-        return self.create_data_loader(self.df_test)
-
-
-class LightningMNISTClassifier(L.LightningModule):
-    def __init__(self, learning_rate=0.01):
-        """
-        Initializes the network
-        """
-        super().__init__()
-
-        # mnist images are (1, 28, 28) (channels, width, height)
-        self.optimizer = None
-        self.scheduler = None
-        self.layer_1 = torch.nn.Linear(28 * 28, 128)
-        self.layer_2 = torch.nn.Linear(128, 256)
-        self.layer_3 = torch.nn.Linear(256, 10)
-        self.learning_rate = learning_rate
-        self.val_outputs = []
-        self.test_outputs = []
 
     def forward(self, x):
-        """
-        Args:
-            x: Input data
-
-        Returns:
-            output - mnist digit label for the input image
-        """
-        batch_size = x.size()[0]
-
-        # (b, 1, 28, 28) -> (b, 1*28*28)
-        x = x.view(batch_size, -1)
-
-        # layer 1 (b, 1*28*28) -> (b, 128)
-        x = self.layer_1(x)
-        x = torch.relu(x)
-
-        # layer 2 (b, 128) -> (b, 256)
-        x = self.layer_2(x)
-        x = torch.relu(x)
-
-        # layer 3 (b, 256) -> (b, 10)
-        x = self.layer_3(x)
-
-        # probability distribution over labels
-        x = torch.log_softmax(x, dim=1)
-
-        return x
-
-    def cross_entropy_loss(self, logits, labels):
-        """
-        Initializes the loss function
-
-        Returns:
-            output: Initialized cross entropy loss function.
-        """
-        return F.nll_loss(logits, labels)
-
-    def training_step(self, train_batch, batch_idx):
-        """
-        Training the data as batches and returns training loss on each batch
-
-        Args:
-            train_batch: Batch data
-            batch_idx: Batch indices
-
-        Returns:
-            output - Training loss
-        """
-        x, y = train_batch
-        logits = self.forward(x)
-        loss = self.cross_entropy_loss(logits, y)
-        return {"loss": loss}
-
-    def validation_step(self, val_batch, batch_idx):
-        """
-        Performs validation of data in batches
-
-        Args:
-            val_batch: Batch data
-            batch_idx: Batch indices
-
-        Returns:
-            output: valid step loss
-        """
-        x, y = val_batch
-        logits = self.forward(x)
-        loss = self.cross_entropy_loss(logits, y)
-        self.val_outputs.append(loss)
-        return {"val_step_loss": loss}
-
-    def on_validation_epoch_end(self):
-        """
-        Computes average validation loss
-        """
-        avg_loss = torch.stack(self.val_outputs).mean()
-        self.log("val_loss", avg_loss, sync_dist=True)
-        self.val_outputs.clear()
-
-    def test_step(self, test_batch, batch_idx):
-        """
-        Performs test and computes the accuracy of the model
-
-        Args:
-            test_batch: Batch data
-            batch_idx: Batch indices
-
-        Returns:
-            output: Testing accuracy
-        """
-        x, y = test_batch
-        output = self.forward(x)
-        _, y_hat = torch.max(output, dim=1)
-        test_acc = accuracy(y_hat.cpu(), y.cpu(), task="multiclass", num_classes=10)
-        self.test_outputs.append(test_acc)
-        return {"test_acc": test_acc}
-
-    def on_test_epoch_end(self):
-        """
-        Computes average test accuracy score
-        """
-        avg_test_acc = torch.stack(self.test_outputs).mean()
-        self.log("avg_test_acc", avg_test_acc, sync_dist=True)
-        self.test_outputs.clear()
-
-    def configure_optimizers(self):
-        """
-        Initializes the optimizer and learning rate scheduler
-
-        Returns:
-            output: Initialized optimizer and scheduler
-        """
-        self.optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
-        self.scheduler = {
-            "scheduler": torch.optim.lr_scheduler.ReduceLROnPlateau(
-                self.optimizer,
-                mode="min",
-                factor=0.2,
-                patience=2,
-                min_lr=1e-6,
-                verbose=True,
-            ),
-            "monitor": "val_loss",
-        }
-        return [self.optimizer], [self.scheduler]
+        return self.model(x)
 
 
-def main():
-    early_stopping = EarlyStopping(
-        monitor="val_loss",
-    )
 
-    checkpoint_callback = ModelCheckpoint(
-        dirpath=os.getcwd(), save_top_k=1, verbose=True, monitor="val_loss", mode="min"
-    )
-    lr_logger = LearningRateMonitor()
-    cli = LightningCLI(
-        LightningMNISTClassifier,
-        MNISTDataModule,
-        run=False,
-        save_config_callback=None,
-        trainer_defaults={"callbacks": [early_stopping, checkpoint_callback, lr_logger]},
-    )
-    if cli.trainer.global_rank == 0:
-        mlflow.pytorch.autolog()
-    cli.trainer.fit(cli.model, datamodule=cli.datamodule)
-    cli.trainer.test(ckpt_path="best", datamodule=cli.datamodule)
+
+def train(dataloader, model, loss_fn, metrics_fn, optimizer, epoch):
+    """Train the model on a single pass of the dataloader.
+
+    Args:
+        dataloader: an instance of `torch.utils.data.DataLoader`, containing the training data.
+        model: an instance of `torch.nn.Module`, the model to be trained.
+        loss_fn: a callable, the loss function.
+        metrics_fn: a callable, the metrics function.
+        optimizer: an instance of `torch.optim.Optimizer`, the optimizer used for training.
+        epoch: an integer, the current epoch number.
+    """
+    model.train()
+    for batch, (X, y) in enumerate(dataloader):
+        X, y = X.to(device), y.to(device)
+
+        pred = model(X)
+        loss = loss_fn(pred, y)
+        accuracy = metrics_fn(pred, y)
+
+        # Backpropagation.
+        loss.backward()
+        optimizer.step()
+        optimizer.zero_grad()
+
+        if batch % 100 == 0:
+            loss, current = loss.item(), batch
+            step = batch // 100 * (epoch + 1)
+            mlflow.log_metric("loss", f"{loss:2f}", step=step)
+            mlflow.log_metric("accuracy", f"{accuracy:2f}", step=step)
+            print(f"loss: {loss:2f} accuracy: {accuracy:2f} [{current} / {len(dataloader)}]")
+
+
+
+
+
+def evaluate(dataloader, model, loss_fn, metrics_fn, epoch):
+    """Evaluate the model on a single pass of the dataloader.
+
+    Args:
+        dataloader: an instance of `torch.utils.data.DataLoader`, containing the eval data.
+        model: an instance of `torch.nn.Module`, the model to be trained.
+        loss_fn: a callable, the loss function.
+        metrics_fn: a callable, the metrics function.
+        epoch: an integer, the current epoch number.
+    """
+    num_batches = len(dataloader)
+    model.eval()
+    eval_loss, eval_accuracy = 0, 0
+    with torch.no_grad():
+        for X, y in dataloader:
+            X, y = X.to(device), y.to(device)
+            pred = model(X)
+            eval_loss += loss_fn(pred, y).item()
+            eval_accuracy += metrics_fn(pred, y)
+
+    eval_loss /= num_batches
+    eval_accuracy /= num_batches
+    mlflow.log_metric("eval_loss", f"{eval_loss:2f}", step=epoch)
+    mlflow.log_metric("eval_accuracy", f"{eval_accuracy:2f}", step=epoch)
+
+    print(f"Eval metrics: \nAccuracy: {eval_accuracy:.2f}, Avg loss: {eval_loss:2f} \n")
+
+
+
 
 
 if __name__ == "__main__":
-    main()
+    
+
+    # Get cpu or gpu for training.
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    parser = ArgumentParser()
+
+    training_data = datasets.FashionMNIST(
+        root="data",
+        train=True,
+        download=True,
+        transform=ToTensor(),
+    )
+
+    test_data = datasets.FashionMNIST(
+        root="data",
+        train=False,
+        download=True,
+        transform=ToTensor(),
+    )
+    print(f"Image size: {training_data[0][0].shape}")
+    print(f"Size of training dataset: {len(training_data)}")
+    print(f"Size of test dataset: {len(test_data)}")
 
 
+    train_dataloader = DataLoader(training_data, batch_size=64)
+    test_dataloader = DataLoader(test_data, batch_size=64)
+
+
+    mlflow.set_tracking_uri("http://localhost:5000")
+    mlflow.set_experiment("mnist-trial-mini-model")
+
+
+    epochs = 5
+    loss_fn = nn.CrossEntropyLoss()
+    metric_fn = Accuracy(task="multiclass", num_classes=10).to(device)
+    model = ImageClassifier().to(device)
+    optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
+
+
+
+
+    with mlflow.start_run() as run:
+        params = {
+            "epochs": epochs,
+            "learning_rate": 1e-3,
+            "batch_size": 64,
+            "loss_function": loss_fn.__class__.__name__,
+            "metric_function": metric_fn.__class__.__name__,
+            "optimizer": "SGD",
+        }
+        # Log training parameters.
+        mlflow.log_params(params)
+
+        # Log model summary.
+        with open("model_summary.txt", "w") as f:
+            f.write(str(summary(model)))
+        mlflow.log_artifact("model_summary.txt")
+
+        for t in range(epochs):
+            print(f"Epoch {t+1}\n-------------------------------")
+            train(train_dataloader, model, loss_fn, metric_fn, optimizer, epoch=t)
+            evaluate(test_dataloader, model, loss_fn, metric_fn, epoch=0)
+
+        # Save the trained model to MLflow.
+        mlflow.pytorch.log_model(model, "model")
