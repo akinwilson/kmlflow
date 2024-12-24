@@ -12,7 +12,7 @@ metadata:
   labels:
     app: mlflow
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: mlflow 
@@ -26,28 +26,56 @@ spec:
       - name: mlflow
         image: akinolawilson/mlflow:latest
         imagePullPolicy: Always 
-        command: ["/bin/bash"]
-        args:
-          ["mlflow server --host 0.0.0.0 --port 5001 --backend-store-uri sqlite:///meta.db"] # --artifacts-destination s3://my-bucket 
+        # command: ["/bin/bash"]
+        # args:
+        #   ["--host 0.0.0.0 --port 5001 --backend-store-uri sqlite:///meta.db"] # --artifacts-destination s3://my-bucket 
         ports:
           - containerPort: 5001
-        
+            
         volumeMounts:
         - mountPath: /usr/src/app
-          name: pv-data
+          name: mlflow-volume
 
       volumes:
-      - name: pv-data
-        persistentVolumeClaim:
-          claimName: pvc-data
-
-
-
+      - name: mlflow-volume
+        hostPath:
+          path: /home/ola/Code/kmlflow/volume
+        # persistentVolumeClaim:
+        #   claimName: mlflow-pvc
 # See https://mlflow.org/docs/latest/tracking/server.html for configuration details 
 
 # --backend-store-uri sqlite:///meta.db creates meta data database locally under current working directory called 'meta/db' 
 
 # --artifacts-destination s3://my-bucket  will use my-bucket as remote storage. MLFLow server will then act as a proxy for accessing the artifacts 
 #  W/O specifying this flag, artifacts are store locally under current working directory in folder './mlartifacts'
-
-
+# ---
+# apiVersion: v1
+# kind: PersistentVolume
+# metadata:
+#   name: mlflow-volume
+#   namespace: mlflow
+#   labels:
+#     app: mlflow
+# spec:
+#   storageClassName: standard
+#   accessModes:
+#     - ReadWriteOnce
+#   capacity:
+#     storage: 20Gi
+#   hostPath:
+#     path: /
+# ---
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: mlflow-pvc
+# spec:
+#   volumeName: mlflow-pvc
+#   accessModes:
+#     - ReadWriteOnce
+#   resources:
+#     requests:
+#       storage: 10Gi
+#   selector: # <----- here
+#     matchLabels:
+#       app: "mlflow"
