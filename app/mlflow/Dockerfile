@@ -1,4 +1,6 @@
-FROM python:3.12-slim-buster
+FROM python:3.11-slim-buster
+
+WORKDIR /usr/src/app
 
 RUN pip3 install --upgrade pip && \
     pip3 install mlflow==2.19.0 psycopg2-binary
