@@ -41,8 +41,8 @@ echo "Install Katib ..."
 kubectl apply -k "github.com/kubeflow/katib.git/manifests/v1beta1/installs/katib-standalone?ref=master"
 echo ""
 
-echo "Set up proxy server to make cluster dashboard available ..."
-kubectl proxy & 
+echo "Port-forwarding dashboard service ..."
+kubectl port-forward svc/kubernetes-dashboard 8888:443 &
 
 echo ""
 echo "Creating access token ..."
@@ -51,11 +51,11 @@ kubectl create token user
 
 
 echo ""
-echo "Head to:"
+echo "To view the k8s cluster health head to:"
 echo ""
-echo -e "${GREEN}http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/${RESET}"
+# echo -e "${GREEN}http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/${RESET}"
+echo -e "${GREEN}https://localhost:8888/${RESET}"
 echo ""
-echo "to view the k8s cluster health"
 # http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/
 
 echo ""
@@ -71,7 +71,7 @@ echo ""
 
 
 echo "Installing MLflow service ..."
-kubectl apply -f "$SCRIPT_DIR/mlflow/*"
+kubectl apply -f "$SCRIPT_DIR/mlflow/"
 echo ""
 
 echo "Waiting for MLFlow deployment"
@@ -79,10 +79,10 @@ echo ""
 
 
 
-kubectl port-forward svc/mlflow-service -n mlflow 5000:5000 &
+kubectl port-forward svc/mlflow-service -n mlflow 5001:5000 &
 echo "To access the MLFlow's user interface head to:"
 echo ""
-echo -e "${GREEN}http://localhost:5000/${RESET}"
+echo -e "${GREEN}http://localhost:5001/${RESET}"
 echo ""
 # http://localhost:5000/
 
