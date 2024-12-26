@@ -9,12 +9,15 @@ RESET='\033[0m'
 
 
 echo "Deploying local mulit-node kubernetes cluster using kind ..."
-kind create cluster --config  "$SCRIPT_DIR/katib/kind_cluster_deployment.yaml" || 
+kind create cluster --config  "$SCRIPT_DIR/kind/cluster_deployment.yaml" || 
 
 
 # 
 echo "Setting context for kubectl cli tool ..."
-kubectl cluster-info --context kind-kf-cluster
+
+
+# need to replace cluster-name with env variable like kind-$CLUSTER_NAME
+kubectl cluster-info --context kind-kmlflow-local-v1
 echo ""
 
 echo "Rolling out presistent volume and presistent volume claim for Katlib to use as backend storage ..."
@@ -53,7 +56,7 @@ echo ""
 echo -e "${GREEN}http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/${RESET}"
 echo ""
 echo "to view the k8s cluster health"
-
+# http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/
 
 echo ""
 echo ""
@@ -64,17 +67,22 @@ echo "To access the katib's user interface head to:"
 echo ""
 echo -e "${GREEN}http://localhost:8080/katib/${RESET}"
 echo ""
+# http://localhost:8080/katib/
 
 
 echo "Installing MLflow service ..."
 kubectl apply -f "$SCRIPT_DIR/mlflow/*"
 echo ""
 
+echo "Waiting for MLFlow deployment"
 echo ""
+
+
 
 kubectl port-forward svc/mlflow-service -n mlflow 5000:5000 &
 echo "To access the MLFlow's user interface head to:"
 echo ""
 echo -e "${GREEN}http://localhost:5000/${RESET}"
 echo ""
+# http://localhost:5000/
 
