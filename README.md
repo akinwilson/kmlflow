@@ -40,7 +40,12 @@ http://localhost:8080/katib/
 
 Along with the model registry component through
 ```
-http://localhost:5000/mlflow/
+http://localhost:5001/
+```
+
+And the cluster dashboard from 
+```
+https://localhost:8888/
 ```
 
 
