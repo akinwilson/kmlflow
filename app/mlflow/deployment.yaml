@@ -22,6 +22,12 @@ spec:
         app: mlflow 
     spec:
       serviceAccountName: mlflow-sa
+
+      volumes:
+      - name: mlflow-data
+        hostPath:
+          path: /data/
+
       containers:
       - name: mlflow
         image: akinolawilson/mlflow:latest
@@ -33,13 +39,9 @@ spec:
           - containerPort: 5001
             
         volumeMounts:
-        - mountPath: /usr/src/app
-          name: mlflow-volume
+        - name: mlflow-data
+          mountPath: /usr/src/app
 
-      volumes:
-      - name: mlflow-volume
-        hostPath:
-          path: /home/ola/Code/kmlflow/volume
         # persistentVolumeClaim:
         #   claimName: mlflow-pvc
 # See https://mlflow.org/docs/latest/tracking/server.html for configuration details 
