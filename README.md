@@ -21,6 +21,13 @@ To ensure you have all the required CLI tools, run:
 ./check_cli_tools.sh
 ```
 
+Export the environment variables for the cluster name and local volume path. **Note**: `HOST_VOLUME_PATH` needs to be altered to fit your own local deployment.
+```
+export CLUSTER_NAME=kmlflow-local
+export HOST_VOLUME_PATH=/home/ola/Code/kmlflow/volume
+```
+
+
 Deploy the application to a multi-node k8s cluster by then running
 ```bash 
 ./app/deploy.sh
@@ -44,7 +51,7 @@ To destroy the cluster and therewith remove the services, run:
 
 ## Usage 
 
-The `examples/` folder contains `python` code where an experiment is set up, run and tracked, using the katib and mlflow SDKs. Running the examples will populate the user interface with experimental data. The examples demonstrate how to set up experiments for optimization problems face in machine learning and how to systematically track these experiments.  
+The `examples/` folder contains `python` code where an experiment is set up, run and tracked, using the katib and mlflow SDKs. Running the examples will populate the user interface with experimental data. The examples demonstrate how to set up experiments for optimization problems faced in applied machine learning and how to systematically track these experiments.  
 ```
 python examples/example1.py
 ```
@@ -58,4 +65,5 @@ python examples/example2.py
 1) Remove hardcoded persistent volume host filepath and allow for dynamic substitution.
 2) Add custom training dockerfile to use with experiments to repo.
 3) allow for training via the GPU.
-4) Include the deployment of an MLFlow server to allow tracking model artifacts. 
+4) Include the deployment of an MLFlow server to allow tracking model artifacts.
+6) Demonstrate the MLFLow server SDK in the examples folder
