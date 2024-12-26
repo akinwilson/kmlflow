@@ -5,7 +5,7 @@ from torchinfo import summary
 from torchmetrics import Accuracy
 from torchvision import datasets
 from torchvision.transforms import ToTensor
-from argsparse import ArgumentParser 
+from argparse import ArgumentParser 
 import mlflow
 
 
@@ -143,16 +143,16 @@ if __name__ == "__main__":
     loss_fn = nn.CrossEntropyLoss()
     metric_fn = Accuracy(task="multiclass", num_classes=10).to(device)
     model = ImageClassifier().to(device)
-    optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
+    optimizer = torch.optim.SGD(model.parameters(), lr=args.learning_rate)
 
 
 
 
     with mlflow.start_run() as run:
         params = {
-            "epochs": epochs,
-            "learning_rate": 1e-3,
-            "batch_size": 64,
+            "epochs": args.epochs,
+            "learning_rate": args.learning_rate,
+            "batch_size": args.batch_size,
             "loss_function": loss_fn.__class__.__name__,
             "metric_function": metric_fn.__class__.__name__,
             "optimizer": "SGD",
@@ -165,7 +165,7 @@ if __name__ == "__main__":
             f.write(str(summary(model)))
         mlflow.log_artifact("model_summary.txt")
 
-        for t in range(epochs):
+        for t in range(args.epochs):
             print(f"Epoch {t+1}\n-------------------------------")
             train(train_dataloader, model, loss_fn, metric_fn, optimizer, epoch=t)
             evaluate(test_dataloader, model, loss_fn, metric_fn, epoch=0)
