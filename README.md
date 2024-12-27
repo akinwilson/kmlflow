@@ -56,15 +56,17 @@ To destroy the cluster and therewith remove the services, run:
 
 ## Usage 
 
-The `examples/` folder contains `python` code where an experiment is set up, run and tracked, using the katib and mlflow SDKs clients. Running the examples will populate the user interface with experimental data. The examples demonstrate how to set up experiments for optimization problems faced in applied machine learning and how to systematically track these experiments.  
+The `examples/` folder contains `python` code where an experiment is set up, run and tracked, using the katib and mlflow SDKs clients. Running the examples will populate the user interface with experimental data. The examples demonstrate how to set up experiments for blackbox optimization problems faced in applied machine learning and how to systematically track these experiments.  
 ```
 python examples/example1.py
-```
-and 
+``` 
 ```
 python examples/example2.py
 ```
-
+and 
+```
+python examples/example3.py
+```
 
 ## To do 27 Dec 2024
 1) Remove hardcoded persistent volume host filepath and allow for dynamic substitution.
