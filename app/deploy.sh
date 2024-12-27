@@ -42,7 +42,7 @@ kubectl apply -k "github.com/kubeflow/katib.git/manifests/v1beta1/installs/katib
 echo ""
 
 echo "Port-forwarding dashboard service ..."
-kubectl port-forward svc/kubernetes-dashboard 8888:443 &
+kubectl port-forward svc/kubernetes-dashboard 8888:443 -n kubernetes-dashboard &
 
 echo ""
 echo "Creating access token ..."
