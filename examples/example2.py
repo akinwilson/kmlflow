@@ -21,6 +21,10 @@ metadata = ObjectMeta(
 )
 
 # Algorithm specification.
+# options are: grid, bayesianoptimization, hyperband, tpe, multivariate-tpe, cmaes, sobol, pbt
+# check out https://www.kubeflow.org/docs/components/katib/user-guides/hp-tuning/configure-algorithm/
+# for more information on the parameters for each blackbox-based optimisaiton algorithm 
+
 
 algorithm_spec= AlgorithmSpec(
     algorithm_name="bayesianoptimization"
