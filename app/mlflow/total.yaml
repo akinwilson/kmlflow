@@ -26,7 +26,7 @@ spec:
       volumes:
       - name: mlflow-data
         hostPath:
-          path: /home/namedProfile/Code/kmlflow/volume 
+          path: /data/
 
       containers:
       - name: mlflow
@@ -38,4 +38,21 @@ spec:
         volumeMounts:
         - name: mlflow-data
           mountPath: /usr/src/app
-
+---
+apiVersion: v1
+kind: Service 
+metadata:
+  name: mlflow-service
+  namespace: mlflow
+spec:
+  selector:
+    app: mlflow
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5001
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mlflow

@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mlflow-ingress
+  namespace: mlflow
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2 # preserve path after /mlflow
+    nginx.ingress.kubernetes.io/use-regex: "true" # enable regex for path matching
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /mlflow(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: mlflow-service
+                port:
+                  number: 5000
+

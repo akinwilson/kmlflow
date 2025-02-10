@@ -4,6 +4,7 @@ metadata:
   name: mlflow-service
   namespace: mlflow
 spec:
+  type: ClusterIP
   selector:
     app: mlflow
   ports:

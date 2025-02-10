@@ -9,14 +9,14 @@ spec:
   capacity:
     storage: 200Gi
   hostPath:
-    path: /data/
+    path: /home/namedprofile/Code/kmlflow/volume  # This should be the same directory you mounted in the kind cluster
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: mlflow-data
 spec:
-  volumeName: mlflow-data
+  volumeName: kmlflow-data  # Ensure the volumeName matches the PV name
   accessModes:
     - ReadWriteOnce
   resources:
