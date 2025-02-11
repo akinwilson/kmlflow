@@ -30,12 +30,26 @@ spec:
       containers:
       - name: mlflow
         image: akinolawilson/mlflow:latest
-        command: ["mlflow","server", "--host", "0.0.0.0", "--port","5001", "--backend-store-uri", "sqlite:///meta.db"]
+        command: ["/usr/src/app/entrypoint.sh"]
+        args: ["mlflow", "server", "--host", "0.0.0.0", "--port", "5001", "--backend-store-uri", "sqlite:///meta.db"]
         imagePullPolicy: Always 
         ports:
           - containerPort: 5001
             
         volumeMounts:
         - name: mlflow-data
-          mountPath: /usr/src/app
-
+          mountPath: /usr/src/app/data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mlflow-data
+  namespace: mlflow
+spec:
+  storageClassName: standard
+  volumeName: mlflow-data  # Ensure the volumeName matches the PV name
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 40Gi

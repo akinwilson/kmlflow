@@ -67,6 +67,14 @@ echo ""
 echo ""
 
 
+# Ensure /data exists inside Minikube
+echo "Ensuring /data directory exists inside Minikube..."
+minikube ssh -- "sudo mkdir -p /data/katib && sudo mkdir -p /data/mlflow && sudo chmod -R 777 /data"
+echo "/data directory is ready."
+echo ""
+echo ""
+
+
 minikube addons enable ingress
 
 
@@ -88,9 +96,14 @@ echo "Ingress NGINX controller is ready."
 echo ""
 echo ""
 
+echo "Install Katib ..."
+kubectl apply -k "github.com/kubeflow/katib.git/manifests/v1beta1/installs/katib-standalone?ref=master"
+# kubectl wait --for=condition=available --timeout=60s -k "github.com/kubeflow/katib.git/manifests/v1beta1/installs/katib-standalone?ref=master"
+echo ""
+
 
 echo "Rolling out persistent volume and persistent volume claim for Katib to use as backend storage ..."
-kubectl apply -f "$SCRIPT_DIR/katib/persistent_volume_and_claim.yaml"
+kubectl apply -f "$SCRIPT_DIR/katib/pv.yaml"
 #kubectl wait --for=condition=available --timeout=60s -f "$SCRIPT_DIR/katib/persistent_volume_and_claim.yaml"
 echo ""
 
@@ -109,10 +122,7 @@ kubectl apply -f "$SCRIPT_DIR/katib/permissions.yaml"
 # kubectl wait --for=condition=available --timeout=60s -f "$SCRIPT_DIR/katib/permissions.yaml"
 echo ""
 
-echo "Install Katib ..."
-kubectl apply -k "github.com/kubeflow/katib.git/manifests/v1beta1/installs/katib-standalone?ref=master"
-# kubectl wait --for=condition=available --timeout=60s -k "github.com/kubeflow/katib.git/manifests/v1beta1/installs/katib-standalone?ref=master"
-echo ""
+
 
 echo "Install Mlflow ..."
 kubectl apply -f "$SCRIPT_DIR/mlflow/namespace.yaml"
@@ -131,11 +141,6 @@ echo "Ingress objects created successfully."
 echo ""
 echo ""
 
-
-echo "Starting minikube tunnel in background ..."
-minikube tunnel > /dev/tty 2>&1 &
-echo ""
-echo ""
 
 # Print the Ingress URLs for the services with color formatting
 echo "To view the K8s cluster health head to:"
@@ -157,6 +162,13 @@ TOKEN=$(kubectl create token user)
 echo "Here is a token to start with:"
 echo ""
 echo -e "${CYAN}$TOKEN${RESET}"
+echo ""
+
+echo "Run the following command to make the URLs above accessible"
+
+echo "Starting minikube tunnel in background ..."
+echo "`minikube tunnel`"
+echo ""
 echo ""
 
 # Complete the deployment

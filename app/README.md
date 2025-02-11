@@ -13,10 +13,16 @@ execute all files ending in yaml with kubectl
 find . -type f -name "*.yaml" -exec kubectl apply -f {} \;
 ```
 
-#### Minikube 
-
-following [this tutorial](https://minikube.sigs.k8s.io/docs/tutorials/nvidia/) for setting up `minikube`
-
+#### Docker containers: building and pushing 
+build 
 ```
-
+docker build . -f Dockerfile.mlflow -t mlflow
+```
+tag 
+```
+docker tag mlflow akinolawilson/mlflow
+```
+push 
+```
+docker push akinolawilson/mlflow:latest
 ```

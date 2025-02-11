@@ -4,11 +4,15 @@ WORKDIR /usr/src/app
 
 COPY ./entrypoint.sh ./ 
 
+RUN chmod +x /usr/src/app/entrypoint.sh
+RUN mkdir /usr/src/app/data 
+
+
 RUN pip3 install --upgrade pip && \
     pip3 install mlflow==2.19.0 psycopg2-binary
 
 
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["/usr/src/app/entrypoint.sh"]
 
 # ENTRYPOINT ["mlflow","server", "--host", "0.0.0.0", "--port","5001", "--backend-store-uri", "sqlite:///meta.db"]
 
