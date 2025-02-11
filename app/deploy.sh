@@ -6,8 +6,8 @@ set -e
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 # Default values
-DEFAULT_CLUSTER_NAME="kmlflow-local-v1"
-DEFAULT_HOST_VOLUME_PATH="$(dirname "$SCRIPT_DIR")/volume"
+CLUSTER_NAME="kmlflow-local-v1"
+HOST_VOLUME_PATH="$(dirname "$SCRIPT_DIR")/volume"
 
 
 
@@ -21,13 +21,13 @@ echo ""
 echo ""
 
 # Prompt user to accept default values or set new ones
-read -p "Enter cluster name (default: $DEFAULT_CLUSTER_NAME): " CLUSTER_NAME
-CLUSTER_NAME="${CLUSTER_NAME:-$DEFAULT_CLUSTER_NAME}"
+# read -p "Enter cluster name (default: $DEFAULT_CLUSTER_NAME): " CLUSTER_NAME
+# CLUSTER_NAME="${CLUSTER_NAME:-$DEFAULT_CLUSTER_NAME}"
 
-read -p "Enter volume path (default: $DEFAULT_HOST_VOLUME_PATH): " HOST_VOLUME_PATH
-HOST_VOLUME_PATH="${HOST_VOLUME_PATH:-$DEFAULT_HOST_VOLUME_PATH}"
-echo ""
-echo ""
+# read -p "Enter volume path (default: $DEFAULT_HOST_VOLUME_PATH): " HOST_VOLUME_PATH
+# HOST_VOLUME_PATH="${HOST_VOLUME_PATH:-$DEFAULT_HOST_VOLUME_PATH}"
+# echo ""
+# echo ""
 
 if [ ! -d $HOST_VOLUME_PATH ]; then
   mkdir -p $HOST_VOLUME_PATH;
@@ -88,12 +88,6 @@ echo "Ingress NGINX controller is ready."
 echo ""
 echo ""
 
-# # Install Ingress Controller (NGINX)
-# echo "Installing NGINX Ingress controller ..."
-# kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/refs/heads/main/deploy/static/provider/kind/deploy.yaml
-# kubectl wait --for=condition=available --timeout=60s -n ingress-nginx deploy/ingress-nginx-controller
-# echo "NGINX Ingress controller installed successfully."
-# echo ""
 
 echo "Rolling out persistent volume and persistent volume claim for Katib to use as backend storage ..."
 kubectl apply -f "$SCRIPT_DIR/katib/persistent_volume_and_claim.yaml"
@@ -128,10 +122,6 @@ kubectl apply -f "$SCRIPT_DIR/mlflow/service.yaml"
 
 
 
-# echo "Waiting for ingress-nginx-controller deployment to be available ... "
-# kubectl wait --for=condition=available --timeout=600s deployment/ingress-nginx-controller -n ingress-nginx
-
-
 # Apply the Ingress objects to expose services
 echo "Creating Ingress objects for services ..."
 kubectl apply -f "$SCRIPT_DIR/ingress/dashboard-ingress.yaml"
@@ -139,28 +129,36 @@ kubectl apply -f "$SCRIPT_DIR/ingress/katib-ingress.yaml"
 kubectl apply -f "$SCRIPT_DIR/ingress/mlflow-ingress.yaml"
 echo "Ingress objects created successfully."
 echo ""
+echo ""
 
+
+echo "Starting minikube tunnel in background ..."
+minikube tunnel > /dev/tty 2>&1 &
+echo ""
+echo ""
 
 # Print the Ingress URLs for the services with color formatting
 echo "To view the K8s cluster health head to:"
-echo -e "${GREEN}https://localhost/dashboard/#${RESET}"
+echo -e "${GREEN}https://192.168.49.2/dashboard/#${RESET}"
 
 echo "To access Katib's user interface head to:"
-echo -e "${GREEN}https://localhost/katib${RESET}"
+echo -e "${GREEN}https://192.168.49.2/katib${RESET}"
 
 echo "To access MLFlow's user interface head to:"
-echo -e "${GREEN}https://localhost/mlflow/#${RESET}"
+echo -e "${GREEN}https://192.168.49.2/mlflow/#${RESET}"
+echo ""
+echo ""
 
-# echo ""
-# echo "To access the dashboard, you will need a token for the user."
-# echo "You can create a token via running the command: 'kubectl create token user' "
-# TOKEN=$(kubectl create token user) 
+echo ""
+echo "To access the dashboard, you will need a token for the user."
+echo "You can create a token via running the command: 'kubectl create token user' "
+TOKEN=$(kubectl create token user) 
 
-# echo "Here is a token to start with:"
-# echo ""
-# echo -e "${CYAN}$TOKEN${RESET}"
-# echo ""
+echo "Here is a token to start with:"
+echo ""
+echo -e "${CYAN}$TOKEN${RESET}"
+echo ""
 
-# # Complete the deployment
-# echo "Deployment complete!"
-# exit 0
+# Complete the deployment
+echo "Deployment complete!"
+exit 0
