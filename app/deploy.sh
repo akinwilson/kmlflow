@@ -1,88 +1,176 @@
 #!/usr/bin/env bash
 
-set -e 
+set -e
 
-
+# Get the directory of the script
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+# Default values
+CLUSTER_NAME="kmlflow-local-v1"
+HOST_VOLUME_PATH="$(dirname "$SCRIPT_DIR")/volume"
+
+
+
+
+
+# Color formatting
 GREEN='\033[0;32m'
+CYAN='\033[0;36m'
 RESET='\033[0m'
-
-
-echo "Deploying local mulit-node kubernetes cluster using kind ..."
-kind create cluster --config  "$SCRIPT_DIR/kind/cluster_deployment.yaml" || 
-
-
-# 
-echo "Setting context for kubectl cli tool ..."
-
-
-# need to replace cluster-name with env variable like kind-$CLUSTER_NAME
-kubectl cluster-info --context kind-kmlflow-local-v1
+echo ""
 echo ""
 
-echo "Rolling out presistent volume and presistent volume claim for Katlib to use as backend storage ..."
-kubectl apply -f "$SCRIPT_DIR/katib/presistent_volume_and_claim.yaml" 
+# Prompt user to accept default values or set new ones
+# read -p "Enter cluster name (default: $DEFAULT_CLUSTER_NAME): " CLUSTER_NAME
+# CLUSTER_NAME="${CLUSTER_NAME:-$DEFAULT_CLUSTER_NAME}"
+
+# read -p "Enter volume path (default: $DEFAULT_HOST_VOLUME_PATH): " HOST_VOLUME_PATH
+# HOST_VOLUME_PATH="${HOST_VOLUME_PATH:-$DEFAULT_HOST_VOLUME_PATH}"
+# echo ""
+# echo ""
+
+if [ ! -d $HOST_VOLUME_PATH ]; then
+  mkdir -p $HOST_VOLUME_PATH;
+fi
+
+
+echo "Using cluster name: $CLUSTER_NAME"
+echo "Using volume path: $HOST_VOLUME_PATH"
+echo ""
 echo ""
 
-echo "Rolling out cluster dashboard application ... "
-kubectl apply -f "$SCRIPT_DIR/katib/dashboard.yaml"
+# Set environment variables for Kubernetes
+export CLUSTER_NAME
+export HOST_VOLUME_PATH
+
+# Deploy the minikube cluster
+echo "Deploying local multi-node Kubernetes cluster using minikube ..."
+minikube profile -p $CLUSTER_NAME
+echo ""
 echo ""
 
-echo "Creating Service Account ...."
-kubectl apply -f "$SCRIPT_DIR/katib/admin.yaml"
+
+
+echo "Starting minikube with docker as driver, container runtime as docker and using all system GPUs"
+echo ""
+echo ""
+echo -e "${CYAN}number of GPUs found: $(nvidia-smi --list-gpus | wc -l) ${RESET} ... "
+echo -e "${CYAN}number of cores used: $(($(nproc)/4)) ${RESET} ... "
+echo -e "${CYAN}RAM used for cluster: $(($(free -m | awk 'NR==2{print $2}')/4))Mb${RESET} ..."
+echo -e "${CYAN}number of simulated nodes: 3${RESET} ... "
+echo ""
 echo ""
 
-echo "Allow all service accounts to view all resources .. "
-kubectl apply -f "$SCRIPT_DIR/katib/permissions.yaml"
+
+minikube start -n 3 --memory $(($(free -m | awk 'NR==2{print $2}')/4)) --cpus $(($(nproc)/4)) --driver docker --container-runtime docker --gpus all --mount-string="$HOST_VOLUME_PATH:/data" --mount
+echo ""
 echo ""
 
+
+# Ensure /data exists inside Minikube
+echo "Ensuring /data directory exists inside Minikube..."
+minikube ssh -- "sudo mkdir -p /data/katib && sudo mkdir -p /data/mlflow && sudo chmod -R 777 /data"
+echo "/data directory is ready."
+echo ""
+echo ""
+
+
+minikube addons enable ingress
+
+
+
+echo "Setting kubectl to minikube context ... "
+kubectl config use-context minikube
+echo ""
+echo ""
+
+
+
+# Wait for the Ingress NGINX controller to be ready
+echo "Waiting for Ingress NGINX controller to be ready..."
+while ! kubectl get pods -n ingress-nginx -l app.kubernetes.io/name=ingress-nginx -o jsonpath='{.items[*].status.conditions[?(@.type=="Ready")].status}' | grep -q "True"; do
+  echo "Ingress NGINX controller not ready yet, waiting..."
+  sleep 5
+done
+echo "Ingress NGINX controller is ready."
+echo ""
+echo ""
 
 echo "Install Katib ..."
 kubectl apply -k "github.com/kubeflow/katib.git/manifests/v1beta1/installs/katib-standalone?ref=master"
+# kubectl wait --for=condition=available --timeout=60s -k "github.com/kubeflow/katib.git/manifests/v1beta1/installs/katib-standalone?ref=master"
 echo ""
 
-echo "Port-forwarding dashboard service ..."
-kubectl port-forward svc/kubernetes-dashboard 8888:443 -n kubernetes-dashboard &
 
-echo ""
-echo "Creating access token ..."
-echo ""
-kubectl create token user 
-
-
-echo ""
-echo "To view the k8s cluster health head to:"
-echo ""
-# echo -e "${GREEN}http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/${RESET}"
-echo -e "${GREEN}https://localhost:8888/${RESET}"
-echo ""
-# http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/
-
-echo ""
+echo "Rolling out persistent volume and persistent volume claim for Katib to use as backend storage ..."
+kubectl apply -f "$SCRIPT_DIR/katib/pv.yaml"
+#kubectl wait --for=condition=available --timeout=60s -f "$SCRIPT_DIR/katib/persistent_volume_and_claim.yaml"
 echo ""
 
-kubectl port-forward svc/katib-ui -n kubeflow 8080:80 &
- 
-echo "To access the katib's user interface head to:"
-echo ""
-echo -e "${GREEN}http://localhost:8080/katib/${RESET}"
-echo ""
-# http://localhost:8080/katib/
-
-
-echo "Installing MLflow service ..."
-kubectl apply -f "$SCRIPT_DIR/mlflow/"
+echo "Rolling out cluster dashboard application ..."
+kubectl apply -f "$SCRIPT_DIR/katib/dashboard.yaml"
+# kubectl wait --for=condition=available --timeout=60s -f "$SCRIPT_DIR/katib/dashboard.yaml"
 echo ""
 
-echo "Waiting for MLFlow deployment"
+echo "Creating Service Account ..."
+kubectl apply -f "$SCRIPT_DIR/katib/admin.yaml"
+# kubectl wait --for=condition=available --timeout=60s -f "$SCRIPT_DIR/katib/admin.yaml"
+echo ""
+
+echo "Allow all service accounts to view all resources ..."
+kubectl apply -f "$SCRIPT_DIR/katib/permissions.yaml"
+# kubectl wait --for=condition=available --timeout=60s -f "$SCRIPT_DIR/katib/permissions.yaml"
 echo ""
 
 
 
-kubectl port-forward svc/mlflow-service -n mlflow 5001:5000 &
-echo "To access the MLFlow's user interface head to:"
-echo ""
-echo -e "${GREEN}http://localhost:5001/${RESET}"
-echo ""
-# http://localhost:5000/
+echo "Install Mlflow ..."
+kubectl apply -f "$SCRIPT_DIR/mlflow/namespace.yaml"
+kubectl get namespaces | grep mlflow 
+kubectl apply -f "$SCRIPT_DIR/mlflow/deployment.yaml"
+kubectl apply -f "$SCRIPT_DIR/mlflow/service.yaml"
 
+
+
+# Apply the Ingress objects to expose services
+echo "Creating Ingress objects for services ..."
+kubectl apply -f "$SCRIPT_DIR/ingress/dashboard-ingress.yaml"
+kubectl apply -f "$SCRIPT_DIR/ingress/katib-ingress.yaml"
+kubectl apply -f "$SCRIPT_DIR/ingress/mlflow-ingress.yaml"
+echo "Ingress objects created successfully."
+echo ""
+echo ""
+
+
+# Print the Ingress URLs for the services with color formatting
+echo "To view the K8s cluster health head to:"
+echo -e "${GREEN}https://192.168.49.2/dashboard/#${RESET}"
+
+echo "To access Katib's user interface head to:"
+echo -e "${GREEN}https://192.168.49.2/katib${RESET}"
+
+echo "To access MLFlow's user interface head to:"
+echo -e "${GREEN}https://192.168.49.2/mlflow/#${RESET}"
+echo ""
+echo ""
+
+echo ""
+echo "To access the dashboard, you will need a token for the user."
+echo "You can create a token via running the command: 'kubectl create token user' "
+TOKEN=$(kubectl create token user) 
+
+echo "Here is a token to start with:"
+echo ""
+echo -e "${CYAN}$TOKEN${RESET}"
+echo ""
+
+echo "Run the following command to make the URLs above accessible"
+
+echo "Starting minikube tunnel in background ..."
+echo "`minikube tunnel`"
+echo ""
+echo ""
+
+# Complete the deployment
+echo "Deployment complete!"
+exit 0

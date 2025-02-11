@@ -25,31 +25,34 @@ spec:
 
       volumes:
       - name: mlflow-data
-        persistentVolumeClaim:
-          claimName: mlflow-data # reference the PVC
+        hostPath:
+          path: /data/
+
       containers:
       - name: mlflow
         image: akinolawilson/mlflow:latest
-        command: ["/usr/src/app/entrypoint.sh"]
-        args: ["mlflow", "server", "--host", "0.0.0.0", "--port", "5001", "--default-artifact-root","file:/usr/src/app/data", "--backend-store-uri", "sqlite:////usr/src/app/data/mlflow.db"]
         imagePullPolicy: Always 
         ports:
           - containerPort: 5001
             
         volumeMounts:
         - name: mlflow-data
-          mountPath: /usr/src/app/data
+          mountPath: /usr/src/app
 ---
 apiVersion: v1
-kind: PersistentVolumeClaim
+kind: Service 
 metadata:
-  name: mlflow-data
+  name: mlflow-service
   namespace: mlflow
 spec:
-  storageClassName: standard
-  volumeName: mlflow-data  # Ensure the volumeName matches the PV name
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 40Gi
+  selector:
+    app: mlflow
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5001
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mlflow

@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: katib-ingress
+  namespace: kubeflow
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /katib/$2 # capture path after katib
+    nginx.ingress.kubernetes.io/use-regex: "true" # enable regex for path matching
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /katib(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: katib-ui
+                port:
+                  number: 80
+
