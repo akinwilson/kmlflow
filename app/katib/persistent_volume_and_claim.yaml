@@ -5,11 +5,11 @@ metadata:
 spec:
   storageClassName: standard
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
   capacity:
-    storage: 200Gi
+    storage: 100Gi
   hostPath:
-    path: /home/namedprofile/Code/kmlflow/volume  # This should be the same directory you mounted in the kind cluster
+    path: /data  # This should be the same directory you mounted in the kind cluster
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -18,7 +18,7 @@ metadata:
 spec:
   volumeName: kmlflow-data  # Ensure the volumeName matches the PV name
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
   resources:
     requests:
-      storage: 80Gi
+      storage: 40Gi

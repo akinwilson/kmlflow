@@ -9,10 +9,16 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 DEFAULT_CLUSTER_NAME="kmlflow-local-v1"
 DEFAULT_HOST_VOLUME_PATH="$(dirname "$SCRIPT_DIR")/volume"
 
+
+
+
+
 # Color formatting
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
 RESET='\033[0m'
+echo ""
+echo ""
 
 # Prompt user to accept default values or set new ones
 read -p "Enter cluster name (default: $DEFAULT_CLUSTER_NAME): " CLUSTER_NAME
@@ -20,28 +26,74 @@ CLUSTER_NAME="${CLUSTER_NAME:-$DEFAULT_CLUSTER_NAME}"
 
 read -p "Enter volume path (default: $DEFAULT_HOST_VOLUME_PATH): " HOST_VOLUME_PATH
 HOST_VOLUME_PATH="${HOST_VOLUME_PATH:-$DEFAULT_HOST_VOLUME_PATH}"
+echo ""
+echo ""
+
+if [ ! -d $HOST_VOLUME_PATH ]; then
+  mkdir -p $HOST_VOLUME_PATH;
+fi
+
 
 echo "Using cluster name: $CLUSTER_NAME"
 echo "Using volume path: $HOST_VOLUME_PATH"
+echo ""
+echo ""
 
 # Set environment variables for Kubernetes
 export CLUSTER_NAME
 export HOST_VOLUME_PATH
 
-# Deploy the Kind cluster
-echo "Deploying local multi-node Kubernetes cluster using kind ..."
-kind create cluster --config "$SCRIPT_DIR/kind/cluster_deployment.yaml" || echo "cluster already exists. Continuing on with application deployment ... "
-# Set the kubectl context
-echo "Setting context for kubectl cli tool ..."
-kubectl cluster-info --context "kind-$CLUSTER_NAME"
+# Deploy the minikube cluster
+echo "Deploying local multi-node Kubernetes cluster using minikube ..."
+minikube profile -p $CLUSTER_NAME
+echo ""
 echo ""
 
-# Install Ingress Controller (NGINX)
-echo "Installing NGINX Ingress controller ..."
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/refs/heads/main/deploy/static/provider/kind/deploy.yaml
-kubectl wait --for=condition=available --timeout=60s -n ingress-nginx deploy/ingress-nginx-controller
-echo "NGINX Ingress controller installed successfully."
+
+
+echo "Starting minikube with docker as driver, container runtime as docker and using all system GPUs"
 echo ""
+echo ""
+echo -e "${CYAN}number of GPUs found: $(nvidia-smi --list-gpus | wc -l) ${RESET} ... "
+echo -e "${CYAN}number of cores used: $(($(nproc)/4)) ${RESET} ... "
+echo -e "${CYAN}RAM used for cluster: $(($(free -m | awk 'NR==2{print $2}')/4))Mb${RESET} ..."
+echo -e "${CYAN}number of simulated nodes: 3${RESET} ... "
+echo ""
+echo ""
+
+
+minikube start -n 3 --memory $(($(free -m | awk 'NR==2{print $2}')/4)) --cpus $(($(nproc)/4)) --driver docker --container-runtime docker --gpus all --mount-string="$HOST_VOLUME_PATH:/data" --mount
+echo ""
+echo ""
+
+
+minikube addons enable ingress
+
+
+
+echo "Setting kubectl to minikube context ... "
+kubectl config use-context minikube
+echo ""
+echo ""
+
+
+
+# Wait for the Ingress NGINX controller to be ready
+echo "Waiting for Ingress NGINX controller to be ready..."
+while ! kubectl get pods -n ingress-nginx -l app.kubernetes.io/name=ingress-nginx -o jsonpath='{.items[*].status.conditions[?(@.type=="Ready")].status}' | grep -q "True"; do
+  echo "Ingress NGINX controller not ready yet, waiting..."
+  sleep 5
+done
+echo "Ingress NGINX controller is ready."
+echo ""
+echo ""
+
+# # Install Ingress Controller (NGINX)
+# echo "Installing NGINX Ingress controller ..."
+# kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/refs/heads/main/deploy/static/provider/kind/deploy.yaml
+# kubectl wait --for=condition=available --timeout=60s -n ingress-nginx deploy/ingress-nginx-controller
+# echo "NGINX Ingress controller installed successfully."
+# echo ""
 
 echo "Rolling out persistent volume and persistent volume claim for Katib to use as backend storage ..."
 kubectl apply -f "$SCRIPT_DIR/katib/persistent_volume_and_claim.yaml"
@@ -69,18 +121,15 @@ kubectl apply -k "github.com/kubeflow/katib.git/manifests/v1beta1/installs/katib
 echo ""
 
 echo "Install Mlflow ..."
-
 kubectl apply -f "$SCRIPT_DIR/mlflow/namespace.yaml"
-
 kubectl get namespaces | grep mlflow 
-
-
 kubectl apply -f "$SCRIPT_DIR/mlflow/deployment.yaml"
 kubectl apply -f "$SCRIPT_DIR/mlflow/service.yaml"
 
 
 
-
+# echo "Waiting for ingress-nginx-controller deployment to be available ... "
+# kubectl wait --for=condition=available --timeout=600s deployment/ingress-nginx-controller -n ingress-nginx
 
 
 # Apply the Ingress objects to expose services
@@ -91,8 +140,6 @@ kubectl apply -f "$SCRIPT_DIR/ingress/mlflow-ingress.yaml"
 echo "Ingress objects created successfully."
 echo ""
 
-# # patching the ingress-controller to have type node port 
-# kubectl patch svc ingress-nginx-controller -n ingress-nginx -p '{"spec":{"type":"NodePort"}}'
 
 # Print the Ingress URLs for the services with color formatting
 echo "To view the K8s cluster health head to:"
@@ -104,17 +151,16 @@ echo -e "${GREEN}https://localhost/katib${RESET}"
 echo "To access MLFlow's user interface head to:"
 echo -e "${GREEN}https://localhost/mlflow/#${RESET}"
 
-echo ""
-echo "To access the dashboard, you will need a token for the user."
-echo "You can create a token via running the command: 'kubectl create token user' "
-TOKEN=$(kubectl create token user) 
+# echo ""
+# echo "To access the dashboard, you will need a token for the user."
+# echo "You can create a token via running the command: 'kubectl create token user' "
+# TOKEN=$(kubectl create token user) 
 
-echo "Here is a token to start with:"
-echo ""
-echo -e "${CYAN}$TOKEN${RESET}"
-echo ""
+# echo "Here is a token to start with:"
+# echo ""
+# echo -e "${CYAN}$TOKEN${RESET}"
+# echo ""
 
-# Complete the deployment
-echo "Deployment complete!"
-
-exit 0 
+# # Complete the deployment
+# echo "Deployment complete!"
+# exit 0

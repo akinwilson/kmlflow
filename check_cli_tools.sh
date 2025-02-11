@@ -31,9 +31,9 @@ if [ -z "$(command -v docker)" ]; then
   exit 1
 fi
 
-if [ -z "$(command -v kind)" ]; then
-  echo "Unable to find Kind"
-  echo "To install Kind, please follow this guide: ${GREEN}https://kind.sigs.k8s.io/docs/user/quick-start/#installation${RESET}"
+if [ -z "$(command -v minikube)" ]; then
+  echo "Unable to find Minikube"
+  echo "To install Minikube, please follow this guide: ${GREEN}https://k8s-docs.netlify.app/en/docs/tasks/tools/install-minikube/${RESET}"
   exit 1
 fi
 

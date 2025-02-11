@@ -25,12 +25,12 @@ spec:
 
       volumes:
       - name: mlflow-data
-        hostPath:
-          path: /home/namedProfile/Code/kmlflow/volume 
-
+        persistentVolumeClaim:
+          claimName: mlflow-data # reference the PVC
       containers:
       - name: mlflow
         image: akinolawilson/mlflow:latest
+        command: ["mlflow","server", "--host", "0.0.0.0", "--port","5001", "--backend-store-uri", "sqlite:///meta.db"]
         imagePullPolicy: Always 
         ports:
           - containerPort: 5001
