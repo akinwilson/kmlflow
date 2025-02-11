@@ -31,7 +31,7 @@ spec:
       - name: mlflow
         image: akinolawilson/mlflow:latest
         command: ["/usr/src/app/entrypoint.sh"]
-        args: ["mlflow", "server", "--host", "0.0.0.0", "--port", "5001", "--backend-store-uri", "sqlite:///meta.db"]
+        args: ["mlflow", "server", "--host", "0.0.0.0", "--port", "5001", "--default-artifact-root","file:/usr/src/app/data", "--backend-store-uri", "sqlite:////usr/src/app/data/mlflow.db"]
         imagePullPolicy: Always 
         ports:
           - containerPort: 5001
