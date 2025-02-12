@@ -13,16 +13,9 @@ execute all files ending in yaml with kubectl
 find . -type f -name "*.yaml" -exec kubectl apply -f {} \;
 ```
 
-#### Docker containers: building and pushing 
-build 
+#### Docker containers: build, tag and push 
+
 ```
-docker build . -f Dockerfile.mlflow -t mlflow
+docker build . -f Dockerfile.mlflow -t mlflow && docker tag mlflow akinolawilson/mlflow && docker push akinolawilson/mlflow:latest
 ```
-tag 
-```
-docker tag mlflow akinolawilson/mlflow
-```
-push 
-```
-docker push akinolawilson/mlflow:latest
-```
+
