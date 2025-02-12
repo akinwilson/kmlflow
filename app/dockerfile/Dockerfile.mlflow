@@ -5,8 +5,13 @@ WORKDIR /usr/src/app
 COPY ./entrypoint.sh ./ 
 
 RUN chmod +x /usr/src/app/entrypoint.sh
-RUN mkdir /usr/src/app/data 
 
+# for storing artefacts 
+RUN mkdir /usr/src/app/data 
+#  Make the Directory Writable for All Users
+RUN chmod -R 777 /usr/src/app
+RUN chmod -R 777 /usr/src/app/data
+RUN mkdir /usr/src/app/data/artifacts
 
 RUN pip3 install --upgrade pip && \
     pip3 install mlflow==2.19.0 psycopg2-binary

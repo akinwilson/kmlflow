@@ -34,6 +34,8 @@ if [ ! -d $HOST_VOLUME_PATH ]; then
   mkdir -p $HOST_VOLUME_PATH;
 fi
 
+sudo chmod 777 $HOST_VOLUME_PATH
+
 
 echo "Using cluster name: $CLUSTER_NAME"
 echo "Using volume path: $HOST_VOLUME_PATH"
