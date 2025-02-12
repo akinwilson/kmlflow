@@ -16,6 +16,7 @@ HOST_VOLUME_PATH="$(dirname "$SCRIPT_DIR")/volume"
 # Color formatting
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
+MAGENTA='\033[0;95m'
 RESET='\033[0m'
 echo ""
 echo ""
@@ -156,21 +157,24 @@ echo ""
 
 echo ""
 echo "To access the dashboard, you will need a token for the user."
-echo "You can create a token via running the command: 'kubectl create token user' "
+echo -e "You can create a token via running the command: ${MAGENTA}kubectl create token user${RESET}"
 TOKEN=$(kubectl create token user) 
 
 echo "Here is a token to start with:"
 echo ""
 echo -e "${CYAN}$TOKEN${RESET}"
 echo ""
-
-echo "Run the following command to make the URLs above accessible"
-
-echo "Starting minikube tunnel in background ..."
-echo "`minikube tunnel`"
-echo ""
 echo ""
 
 # Complete the deployment
 echo "Deployment complete!"
+echo ""
+echo ""
+
+
+echo "Finally you will need to set up the minikube tunnel to your ingress of the cluster to make your services accessible."
+echo -e "Run the command: ${MAGENTA}minikube tunnel${RESET}"
+echo ""
+echo ""
+
 exit 0
