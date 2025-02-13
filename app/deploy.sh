@@ -129,9 +129,16 @@ kubectl apply -f "$SCRIPT_DIR/mlflow/deployment.yaml"
 kubectl apply -f "$SCRIPT_DIR/mlflow/service.yaml"
 
 
-echo "Installing MinIO ..."
+echo "Installing MinIO..."
+
 kubectl apply -f "$SCRIPT_DIR/minio/deployment.yaml"
 
+echo "Waiting for MinIO to be ready..."
+while ! kubectl get pods -n mlflow -l app=minio -o jsonpath='{.items[*].status.conditions[?(@.type=="Ready")].status}' | grep -q "True"; do
+  echo "MinIO not ready yet, waiting..."
+  sleep 5
+done
+echo "MinIO is ready."
 
 # Apply the Ingress objects to expose services
 echo "Creating Ingress objects for services ..."
@@ -139,6 +146,23 @@ kubectl apply -f "$SCRIPT_DIR/ingress/dashboard-ingress.yaml"
 kubectl apply -f "$SCRIPT_DIR/ingress/katib-ingress.yaml"
 kubectl apply -f "$SCRIPT_DIR/ingress/mlflow-ingress.yaml"
 echo "Ingress objects created successfully."
+echo ""
+echo ""
+
+
+
+
+# creating mlflow bucket 
+echo "Coniguring aws cli to use minIO access key and secret ... "
+aws configure set aws_access_key_id minioaccesskey
+aws configure set aws_secret_access_key miniosecretkey123
+aws configure set default.region eu-west-2
+
+echo "Creating artifact bucket: mlflow-artifacts ..."
+aws --endpoint-url http://192.168.49.2 s3api create-bucket \
+    --bucket mlflow-artifacts \
+    --region eu-west-2 \
+    --no-verify-ssl
 echo ""
 echo ""
 
@@ -152,15 +176,13 @@ echo -e "${GREEN}https://192.168.49.2/katib${RESET}"
 
 echo "To access MLFlow's user interface head to:"
 echo -e "${GREEN}https://192.168.49.2/mlflow/#${RESET}"
+
+echo "To access MinIO's user interface for the bucket:"
+echo -e "${GREEN}http://192.168.49.2/minio/browser/mlflow-artifacts${RESET}"
 echo ""
 echo ""
 
-echo "To access MinIO's user interface head to:"
-echo -e "${GREEN}http://192.168.49.2/minio/login${RESET}"
-echo ""
-echo ""
 
-echo ""
 echo "To access the dashboard, you will need a token for the user."
 echo -e "You can create a token via running the command: ${MAGENTA}kubectl create token user${RESET}"
 TOKEN=$(kubectl create token user) 
@@ -175,6 +197,7 @@ echo ""
 echo "Deployment complete!"
 echo ""
 echo ""
+
 
 
 echo "Finally you will need to set up the minikube tunnel to your ingress of the cluster to make your services accessible."
