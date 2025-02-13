@@ -51,11 +51,18 @@ aws configure set aws_secret_access_key miniosecretkey123
 aws configure set default.region eu-west-2
 ```
 
+programtically create the bucket in minio
+```bash 
+aws --endpoint-url http://192.168.49.2 s3api create-bucket \
+    --bucket mlflow-artifacts \
+    --region eu-west-2 \
+    --no-verify-ssl
+```
+
 verify an artifact bucket exists
 ```bash
 aws --endpoint-url http://192.168.49.2 s3api list-buckets --no-verify-ssl --region eu-west-2
 ```
-
 if a bucket exists, you should see something like 
 ```json
 {
@@ -72,6 +79,9 @@ if a bucket exists, you should see something like
     "Prefix": null
 }
 ```
-
+head over to the browser to via the bucket from
+```
+http://192.168.49.2/minio/browser/mlflow-artifacts
+```
 
 These values are set inside of the `/minio` `deployment.yaml`.
