@@ -13,9 +13,65 @@ execute all files ending in yaml with kubectl
 find . -type f -name "*.yaml" -exec kubectl apply -f {} \;
 ```
 
-#### Docker containers: build, tag and push 
+### Docker containers: build, tag and push 
 
 ```
 docker build . -f Dockerfile.mlflow -t mlflow && docker tag mlflow akinolawilson/mlflow && docker push akinolawilson/mlflow:latest
 ```
 
+### Open-source remote object store: MinoIO
+To mimic s3 and allow MLflow to use a remote object store for the artifacts, [minIO](https://min.io/) has been deployed.
+
+So before running any examples, these environment variables need to be exported: 
+```bash
+export AWS_ACCESS_KEY_ID="minioaccesskey"
+export AWS_SECRET_ACCESS_KEY="miniosecretkey123"
+export AWS_DEFAULT_REGION="eu-west-2"
+export AWS_S3_FORCE_PATH_STYLE="true"
+export AWS_S3_ADDRESSING_PATH="path"
+export AWS_S3_SIGNATURE_VERSION="s3v4"
+export MLFLOW_S3_ENDPOINT_URL="http://192.168.49.2"
+export MLFLOW_S3_IGNORE_TLS="true"
+
+
+```
+
+```
+mc alias set minio-server $MLFLOW_S3_ENDPOINT_URL $AWS_ACCESS_KEY_ID $AWS_SECRET_ACCESS_KEY
+```
+
+```bash
+echo $AWS_S3_ADDRESSING_PATH && echo $AWS_S3_FORCE_PATH_STYLE && echo $AWS_ACCESS_KEY_ID && echo $AWS_SECRET_ACCESS_KEY && echo $AWS_DEFAULT_REGION && echo $MLFLOW_S3_ENDPOINT_URL && echo $MLFLOW_S3_IGNORE_TLS
+```
+
+configure `awscli` 
+```bash
+aws configure set aws_access_key_id minioaccesskey
+aws configure set aws_secret_access_key miniosecretkey123
+aws configure set default.region eu-west-2
+```
+
+verify an artifact bucket exists
+```bash
+aws --endpoint-url http://192.168.49.2 s3api list-buckets --no-verify-ssl --region eu-west-2
+```
+
+if a bucket exists, you should see something like 
+```json
+{
+    "Buckets": [
+        {
+            "Name": "mlflow-artifacts",
+            "CreationDate": "2025-02-12T12:51:56.138Z"
+        }
+    ],
+    "Owner": {
+        "DisplayName": "minio",
+        "ID": "02d6176db174dc93cb1b899f7c6078f08654445fe8cf1b6ce98d8855f66bdbf4"
+    },
+    "Prefix": null
+}
+```
+
+
+These values are set inside of the `/minio` `deployment.yaml`.
