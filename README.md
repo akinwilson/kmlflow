@@ -40,7 +40,6 @@ http://192.168.49.2/mlflow/#
 And the cluster dashboard from - (you will need the access token for this; see CLI output).
 ```
 https://192.168.49.2/dashboard/#
-
 ```
 There is also an object store web UI deployed as a drop-in replacement for s3 (MinIO), which you can view from 
 ```

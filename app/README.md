@@ -1,4 +1,4 @@
-The scripts `deploy.sh` and `remove.sh` are used in tandem to deploy the katib and mlflow services locally on a kind cluster, and remove them respectively. The folders `katib/` and `mlflow/` contain the necessary `yaml` manifest files to provision these services, the `/minikube` folder and `/ingress` contains the `yaml` to deploy a local a kubernetes cluster and  allow ingress to to the apppliations through the localhost respectively. 
+The scripts `deploy.sh` and `remove.sh` are used in tandem to deploy the katib and mlflow services locally on a kind cluster, and remove them respectively. The folders `katib/`, `/minio` and `mlflow/` contain the necessary `yaml` manifest files to provision these services folder and `/ingress` contains the `yaml` to deploy a local a kubernetes cluster and  allow ingress to to the apppliations through the localhost respectively (this could be tidied up). 
 
 
 ## Developer tools
@@ -36,8 +36,13 @@ export MLFLOW_S3_IGNORE_TLS="true"
 
 ```
 
-```
+Allow to communicate with bucket via MinIO client:
+```bash
 mc alias set minio-server $MLFLOW_S3_ENDPOINT_URL $AWS_ACCESS_KEY_ID $AWS_SECRET_ACCESS_KEY
+```
+and then list the bucket(s) with 
+```bash
+mc ls minio-server
 ```
 
 ```bash
