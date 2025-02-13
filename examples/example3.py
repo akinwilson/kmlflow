@@ -102,9 +102,9 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument('-lr', '--learning-rate', help="Learning rate for optimisation process, i.e. step size", default=1e-3)
     parser.add_argument('-bs', '--batch-size', help="Sample size of to approximate gradient with during stochastic gradient descent algorithm", default=64)
-    parser.add_argument('-e', '--epochs', help="Maxmium number of fitting dataset iterations. I.e. capping the fitting routine", default=10)
+    parser.add_argument('-e', '--epochs', help="Maxmium number of fitting dataset iterations. I.e. capping the fitting routine", default=2)
     
-    parser.add_argument('-t', '--tracking-server-uri', help='Tracking server URI/URL used by client', default='http://localhost:5000')
+    parser.add_argument('-t', '--tracking-server-uri', help='Tracking server URI/URL used by client', default='http://192.168.49.2/mlflow')
     parser.add_argument('-ex', '--experiment-name', help='The name to assign to collection of runs making up the experiment.', default='mnist-mini-CNN')
     # Notice we start and experiment, this experiment may have more than one trial/run.  
 
@@ -112,7 +112,7 @@ if __name__ == "__main__":
 
     # Get cpu or gpu for training.
     device = "cuda" if torch.cuda.is_available() else "cpu"
-
+    print("\n\nUSING GPUs\n\n" if device == "cuda" else "\n\nUSING CPU\n\n")
     training_data = datasets.FashionMNIST(
         root="data",
         train=True,
@@ -134,10 +134,9 @@ if __name__ == "__main__":
     train_dataloader = DataLoader(training_data, batch_size=args.batch_size)
     test_dataloader = DataLoader(test_data, batch_size=args.batch_size)
 
-
+    # mlflow setup 
     mlflow.set_tracking_uri(args.tracking_server_uri)
     mlflow.set_experiment(args.experiment_name)
-
 
     epochs = 5
     loss_fn = nn.CrossEntropyLoss()
@@ -161,9 +160,9 @@ if __name__ == "__main__":
         mlflow.log_params(params)
 
         # Log model summary.
-        with open("model_summary.txt", "w") as f:
-            f.write(str(summary(model)))
-        mlflow.log_artifact("model_summary.txt")
+        # with open("model_summary.txt", "w") as f:
+        #     f.write(str(summary(model)))
+        # mlflow.log_artifact("model_summary.txt")
 
         for t in range(args.epochs):
             print(f"Epoch {t+1}\n-------------------------------")
