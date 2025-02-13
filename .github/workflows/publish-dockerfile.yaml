@@ -22,7 +22,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build ./app/dockerfile -f ./app/dockerfile/Dockerfile.mlflow -t mlflow
+          docker build ./app/docker -f ./app/docker/Dockerfile.mlflow -t mlflow
 
       - name: Tag Docker image
         run: |
