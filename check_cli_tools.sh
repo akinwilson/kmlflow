@@ -68,6 +68,14 @@ fi
 rm /tmp/expected_daemon.json /tmp/actual_daemon.json
 
 
+# check minIO client exits 
+if [-z "$(command -v mc)" ]; then 
+  echo "Unable to find minio client"
+  echo "To install the minio client, please follow this guide: ${GREEN}https://min.io/docs/minio/linux/reference/minio-mc.html${RESET}"
+  exit 1
+fi 
+
+# check if minikube exists
 if [ -z "$(command -v minikube)" ]; then
   echo "Unable to find Minikube"
   echo "To install Minikube, please follow this guide: ${GREEN}https://k8s-docs.netlify.app/en/docs/tasks/tools/install-minikube/${RESET}"
