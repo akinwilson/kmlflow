@@ -16,6 +16,7 @@ HOST_VOLUME_PATH="$(dirname "$SCRIPT_DIR")/volume"
 # Color formatting
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
+MAGENTA='\033[0;95m'
 RESET='\033[0m'
 echo ""
 echo ""
@@ -32,6 +33,8 @@ echo ""
 if [ ! -d $HOST_VOLUME_PATH ]; then
   mkdir -p $HOST_VOLUME_PATH;
 fi
+
+sudo chmod 777 $HOST_VOLUME_PATH
 
 
 echo "Using cluster name: $CLUSTER_NAME"
@@ -69,7 +72,7 @@ echo ""
 
 # Ensure /data exists inside Minikube
 echo "Ensuring /data directory exists inside Minikube..."
-minikube ssh -- "sudo mkdir -p /data/katib && sudo mkdir -p /data/mlflow && sudo chmod -R 777 /data"
+minikube ssh -- "sudo mkdir -p /data/katib && sudo mkdir -p /data/mlflow && sudo mkdir -p /data/minio && sudo chmod -R 777 /data"
 echo "/data directory is ready."
 echo ""
 echo ""
@@ -98,28 +101,23 @@ echo ""
 
 echo "Install Katib ..."
 kubectl apply -k "github.com/kubeflow/katib.git/manifests/v1beta1/installs/katib-standalone?ref=master"
-# kubectl wait --for=condition=available --timeout=60s -k "github.com/kubeflow/katib.git/manifests/v1beta1/installs/katib-standalone?ref=master"
 echo ""
 
 
 echo "Rolling out persistent volume and persistent volume claim for Katib to use as backend storage ..."
 kubectl apply -f "$SCRIPT_DIR/katib/pv.yaml"
-#kubectl wait --for=condition=available --timeout=60s -f "$SCRIPT_DIR/katib/persistent_volume_and_claim.yaml"
 echo ""
 
 echo "Rolling out cluster dashboard application ..."
 kubectl apply -f "$SCRIPT_DIR/katib/dashboard.yaml"
-# kubectl wait --for=condition=available --timeout=60s -f "$SCRIPT_DIR/katib/dashboard.yaml"
 echo ""
 
 echo "Creating Service Account ..."
 kubectl apply -f "$SCRIPT_DIR/katib/admin.yaml"
-# kubectl wait --for=condition=available --timeout=60s -f "$SCRIPT_DIR/katib/admin.yaml"
 echo ""
 
 echo "Allow all service accounts to view all resources ..."
 kubectl apply -f "$SCRIPT_DIR/katib/permissions.yaml"
-# kubectl wait --for=condition=available --timeout=60s -f "$SCRIPT_DIR/katib/permissions.yaml"
 echo ""
 
 
@@ -130,6 +128,9 @@ kubectl get namespaces | grep mlflow
 kubectl apply -f "$SCRIPT_DIR/mlflow/deployment.yaml"
 kubectl apply -f "$SCRIPT_DIR/mlflow/service.yaml"
 
+
+echo "Installing MinIO ..."
+kubectl apply -f "$SCRIPT_DIR/minio/deployment.yaml"
 
 
 # Apply the Ingress objects to expose services
@@ -154,23 +155,31 @@ echo -e "${GREEN}https://192.168.49.2/mlflow/#${RESET}"
 echo ""
 echo ""
 
+echo "To access MinIO's user interface head to:"
+echo -e "${GREEN}http://192.168.49.2/minio/login${RESET}"
+echo ""
+echo ""
+
 echo ""
 echo "To access the dashboard, you will need a token for the user."
-echo "You can create a token via running the command: 'kubectl create token user' "
+echo -e "You can create a token via running the command: ${MAGENTA}kubectl create token user${RESET}"
 TOKEN=$(kubectl create token user) 
 
 echo "Here is a token to start with:"
 echo ""
 echo -e "${CYAN}$TOKEN${RESET}"
 echo ""
-
-echo "Run the following command to make the URLs above accessible"
-
-echo "Starting minikube tunnel in background ..."
-echo "`minikube tunnel`"
-echo ""
 echo ""
 
 # Complete the deployment
 echo "Deployment complete!"
+echo ""
+echo ""
+
+
+echo "Finally you will need to set up the minikube tunnel to your ingress of the cluster to make your services accessible."
+echo -e "Run the command: ${MAGENTA}minikube tunnel${RESET}"
+echo ""
+echo ""
+
 exit 0

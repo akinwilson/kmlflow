@@ -4,7 +4,7 @@
 
 ## Overview 
 
-kmlflow is a experiment tracking, hyperparameter optimisation and model registry framework that allows end users to locally deploy a [Kubeflow](https://www.kubeflow.org/) component, [Katib](https://www.kubeflow.org/docs/components/katib/overview/) the [hyperparameter optimisation](https://en.wikipedia.org/wiki/Hyperparameter_optimization) and experiment tracking framework combined with [MLFlow](https://mlflow.org/), used as a model registry in this use case. The tools used to achieve these backend services are [Docker](https://www.docker.com/), [minikube](https://minikube.sigs.k8s.io/docs/) and [kubectl](https://kubernetes.io/docs/reference/kubectl/). This repository demonstrates how to use this experiment tracking, hyperparameter optimisation and model registry framework in python code to allow for fitting and inference of models in a streamlined fashion. 
+kmlflow is a experiment tracking, hyperparameter optimisation and model registry framework that allows end users to locally deploy a [Kubeflow](https://www.kubeflow.org/) component, [Katib](https://www.kubeflow.org/docs/components/katib/overview/) the [hyperparameter optimisation](https://en.wikipedia.org/wiki/Hyperparameter_optimization) and experiment tracking framework combined with [MLFlow](https://mlflow.org/), used as a model registry in this use case and [minIO](https://min.io/) used as the object store for the MLFlow server. The tools used to achieve these backend services are [Docker](https://www.docker.com/), [minikube](https://minikube.sigs.k8s.io/docs/) and [kubectl](https://kubernetes.io/docs/reference/kubectl/). This repository demonstrates how to use this experiment tracking, hyperparameter optimisation and model registry framework in python code to allow for fitting and inference of models in a streamlined fashion. 
 
 
 ## Installation
@@ -41,7 +41,16 @@ http://private-ip/mlflow/#
 And the cluster dashboard from 
 ```
 https://private-ip/dashboard/#
+
 ```
+
+There is also an object store deployed as a drop-in replacement which can be viewed from 
+```
+http://192.168.49.2/minio/login
+```
+**Note** you will require credentials to login to 
+
+
 where `private-ip` will be shown in the command line output after deploying the cluster. 
 
 

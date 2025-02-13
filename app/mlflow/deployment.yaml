@@ -22,20 +22,45 @@ spec:
         app: mlflow 
     spec:
       serviceAccountName: mlflow-sa
-
       volumes:
       - name: mlflow-data
         persistentVolumeClaim:
-          claimName: mlflow-data # reference the PVC
+          claimName: mlflow-data # Reference the PVC
       containers:
       - name: mlflow
         image: akinolawilson/mlflow:latest
         command: ["/usr/src/app/entrypoint.sh"]
-        args: ["mlflow", "server", "--host", "0.0.0.0", "--port", "5001", "--default-artifact-root","file:/usr/src/app/data", "--backend-store-uri", "sqlite:////usr/src/app/data/mlflow.db"]
+        args: [
+          "mlflow", "server",
+          "--host", "0.0.0.0",
+          "--port", "5001",
+          "--backend-store-uri", "sqlite:////usr/src/app/data/mlflow.db",
+          "--default-artifact-root", "s3://mlflow-artifacts",
+          "--serve-artifacts",
+        ]
         imagePullPolicy: Always 
         ports:
           - containerPort: 5001
             
+        env:
+          - name: AWS_ACCESS_KEY_ID
+            value: "minioaccesskey"  # Change to your MinIO access key
+          - name: AWS_SECRET_ACCESS_KEY
+            value: "miniosecretkey123"  # Change to your MinIO secret key                        
+          - name: AWS_DEFAULT_REGION
+            value: "eu-west-2"
+          - name: AWS_S3_ADDRESSING_PATH
+            value: "path"
+          - name: AWS_S3_FORCE_PATH_STYLE
+            value: "true"
+          - name: export AWS_S3_SIGNATURE_VERSION
+            value: "s3v4"
+
+          - name: MLFLOW_S3_ENDPOINT_URL
+            value: "http://192.168.49.2"  # ingress url for MinIO service
+          - name: MLFLOW_S3_IGNORE_TLS
+            value: "true"
+
         volumeMounts:
         - name: mlflow-data
           mountPath: /usr/src/app/data

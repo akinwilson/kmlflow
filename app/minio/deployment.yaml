@@ -1,0 +1,142 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: minio-pv
+  namespace: mlflow
+spec:
+  capacity:
+    storage: 10Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
+  hostPath:
+    path: /data/minio  # Local storage on the Minikube node
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-pvc
+  namespace: mlflow
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: manual
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio
+  namespace: mlflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      containers:
+        - name: minio
+          image: minio/minio:latest
+          args:
+            - server
+            - /data
+            - "--console-address=:9001"  # Explicitly set MinIO Web UI port
+          ports:
+            - containerPort: 9000  # MinIO API
+            - containerPort: 9001  # MinIO Web UI
+          env:
+            - name: MINIO_BROWSER_REDIRECT_URL
+              value: "http://192.168.49.2/minio"
+            - name: MINIO_CORS_ALLOW_ORIGIN
+              value: "*"
+            - name: MINIO_SERVER_URL
+              value: "http://192.168.49.2"
+            - name: MINIO_ROOT_USER
+              value: "minioaccesskey"  # Change this
+            - name: MINIO_ROOT_PASSWORD
+              value: "miniosecretkey123"  # Change this
+            - name: MINIO_REGION
+              value: "eu-west-2"
+          volumeMounts:
+            - name: minio-storage
+              mountPath: /data
+      volumes:
+        - name: minio-storage
+          persistentVolumeClaim:
+            claimName: minio-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-service
+  namespace: mlflow
+  labels:
+    app: minio
+spec:
+  ports:
+    - name: api
+      port: 9000
+      targetPort: 9000
+      protocol: TCP
+    - name: console
+      port: 9001
+      targetPort: 9001
+      protocol: TCP
+  selector:
+    app: minio
+  type: ClusterIP
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: minio-ingress
+  namespace: mlflow
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/add-base-url: "true"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/x-content-type-options: "nosniff"
+    
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /minio(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: minio-service
+                port:
+                  number: 9001  # Point to the MinIO Web UI
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: minio-api-ingress
+  namespace: mlflow
+  annotations:
+      nginx.ingress.kubernetes.io/rewrite-target: /
+      nginx.ingress.kubernetes.io/proxy-body-size: 1000m
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: minio-service
+                port:
+                  number: 9000  # MinIO API port
