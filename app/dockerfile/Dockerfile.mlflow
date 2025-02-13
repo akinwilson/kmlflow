@@ -6,6 +6,9 @@ COPY ./entrypoint.sh ./
 
 RUN chmod +x /usr/src/app/entrypoint.sh
 
+# Install curl
+RUN apt-get update && apt-get install -y curl
+
 # for storing artefacts 
 RUN mkdir /usr/src/app/data 
 #  Make the Directory Writable for All Users
@@ -14,7 +17,7 @@ RUN chmod -R 777 /usr/src/app/data
 RUN mkdir /usr/src/app/data/artifacts
 
 RUN pip3 install --upgrade pip && \
-    pip3 install mlflow==2.19.0 psycopg2-binary
+    pip3 install mlflow==2.19.0 boto3==1.36.18 psycopg2-binary
 
 
 ENTRYPOINT ["/usr/src/app/entrypoint.sh"]

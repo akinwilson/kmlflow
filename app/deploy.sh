@@ -72,7 +72,7 @@ echo ""
 
 # Ensure /data exists inside Minikube
 echo "Ensuring /data directory exists inside Minikube..."
-minikube ssh -- "sudo mkdir -p /data/katib && sudo mkdir -p /data/mlflow && sudo chmod -R 777 /data"
+minikube ssh -- "sudo mkdir -p /data/katib && sudo mkdir -p /data/mlflow && sudo mkdir -p /data/minio && sudo chmod -R 777 /data"
 echo "/data directory is ready."
 echo ""
 echo ""
@@ -101,28 +101,23 @@ echo ""
 
 echo "Install Katib ..."
 kubectl apply -k "github.com/kubeflow/katib.git/manifests/v1beta1/installs/katib-standalone?ref=master"
-# kubectl wait --for=condition=available --timeout=60s -k "github.com/kubeflow/katib.git/manifests/v1beta1/installs/katib-standalone?ref=master"
 echo ""
 
 
 echo "Rolling out persistent volume and persistent volume claim for Katib to use as backend storage ..."
 kubectl apply -f "$SCRIPT_DIR/katib/pv.yaml"
-#kubectl wait --for=condition=available --timeout=60s -f "$SCRIPT_DIR/katib/persistent_volume_and_claim.yaml"
 echo ""
 
 echo "Rolling out cluster dashboard application ..."
 kubectl apply -f "$SCRIPT_DIR/katib/dashboard.yaml"
-# kubectl wait --for=condition=available --timeout=60s -f "$SCRIPT_DIR/katib/dashboard.yaml"
 echo ""
 
 echo "Creating Service Account ..."
 kubectl apply -f "$SCRIPT_DIR/katib/admin.yaml"
-# kubectl wait --for=condition=available --timeout=60s -f "$SCRIPT_DIR/katib/admin.yaml"
 echo ""
 
 echo "Allow all service accounts to view all resources ..."
 kubectl apply -f "$SCRIPT_DIR/katib/permissions.yaml"
-# kubectl wait --for=condition=available --timeout=60s -f "$SCRIPT_DIR/katib/permissions.yaml"
 echo ""
 
 
@@ -133,6 +128,9 @@ kubectl get namespaces | grep mlflow
 kubectl apply -f "$SCRIPT_DIR/mlflow/deployment.yaml"
 kubectl apply -f "$SCRIPT_DIR/mlflow/service.yaml"
 
+
+echo "Installing MinIO ..."
+kubectl apply -f "$SCRIPT_DIR/minio/deployment.yaml"
 
 
 # Apply the Ingress objects to expose services
@@ -154,6 +152,11 @@ echo -e "${GREEN}https://192.168.49.2/katib${RESET}"
 
 echo "To access MLFlow's user interface head to:"
 echo -e "${GREEN}https://192.168.49.2/mlflow/#${RESET}"
+echo ""
+echo ""
+
+echo "To access MinIO's user interface head to:"
+echo -e "${GREEN}http://192.168.49.2/minio/login${RESET}"
 echo ""
 echo ""
 
