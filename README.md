@@ -9,20 +9,22 @@ kmlflow is a experiment tracking, hyperparameter optimisation and model registry
 
 ## Installation
 
-Clone the repository, create a virtual environment and install the requirements: 
-```
-pip install -r requirements.txt
-```
 
-To ensure you have all the required CLI tools, run:
+
+Clone the repository and to ensure you have all the required CLI tools, run:
 ```bash
 ./check_cli_tools.sh
+```
+
+Create a python virtual environment and install the requirements: 
+```
+pip install -r requirements.txt
 ```
 
 
 Deploy the application to a simulated multi-node k8s cluster by then running
 
-**NOTE**: if you have installed the `aws` cli tool, the deployment script `./app/deploy.sh` will alter your aws credentials to dummy variables used with Minio. 
+**WARNING**: if you have installed the `aws` cli tool, the deployment script `./app/deploy.sh` will alter your aws credentials to dummy variables used with MinIO. 
 
 ```bash 
 ./app/deploy.sh
@@ -77,13 +79,13 @@ export MLFLOW_S3_IGNORE_TLS="true"
 
 then to see how the system works, run for MLFlow tracking example and visit the web UI, 
 ```bash 
-python examples/example3.py
+python examples/mlflow.py
 ```
 Or run the Katib example, and visit it's respective web UI. 
 ```bash
-python examples/example1.py
+python examples/hpo.py
 ``` 
-and/or
+and
 ```bash
 python examples/example2.py
 ```
