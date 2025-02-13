@@ -55,10 +55,8 @@ spec:
           env:
             - name: MINIO_BROWSER_REDIRECT_URL
               value: "http://192.168.49.2/minio"
-            # - name: CONSOLE_BASE_PATH
-            #   value: "/minio/"
-            # - name: MINIO_CORS_ALLOW_ORIGIN
-            #   value: "*"
+            - name: MINIO_CORS_ALLOW_ORIGIN
+              value: "*"
             - name: MINIO_SERVER_URL
               value: "http://192.168.49.2"
             - name: MINIO_ROOT_USER
@@ -96,6 +94,7 @@ spec:
     app: minio
   type: ClusterIP
 ---
+
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -107,6 +106,7 @@ metadata:
     nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/proxy-body-size: "100m"
     nginx.ingress.kubernetes.io/x-content-type-options: "nosniff"
+    
 spec:
   ingressClassName: nginx
   rules:
@@ -128,17 +128,12 @@ metadata:
   annotations:
       nginx.ingress.kubernetes.io/rewrite-target: /
       nginx.ingress.kubernetes.io/proxy-body-size: 1000m
-    # nginx.ingress.kubernetes.io/rewrite-target: /$2
-    # nginx.ingress.kubernetes.io/add-base-url: "true"
-    # nginx.ingress.kubernetes.io/use-regex: "true"
 spec:
   ingressClassName: nginx
   rules:
     - http:
         paths:
-          # - path: /minio-api(/|$)(.*)
           - path: /
-            # pathType: ImplementationSpecific
             pathType: Prefix
             backend:
               service:
