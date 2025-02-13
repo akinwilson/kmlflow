@@ -59,7 +59,7 @@ echo "$EXPECTED_CONTENT" > /tmp/expected_daemon.json
 echo "$ACTUAL_CONTENT" > /tmp/actual_daemon.json
 
 if diff -u /tmp/expected_daemon.json /tmp/actual_daemon.json > /dev/null; then
-    echo "Cluster will has GPU access through containers "
+    echo "Cluster will have GPU access through containers "
 else
     echo "You have not configured nvidia-container-runtime to be used by docker. You will not have GPU access"
     echo "Revisit ${GREEN}https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html${RESET} to finish the configuration."
@@ -72,7 +72,7 @@ rm /tmp/expected_daemon.json /tmp/actual_daemon.json
 if [-z "$(command -v mc)" ]; then 
   echo "Unable to find minio client"
   echo "To install the minio client, please follow this guide: ${GREEN}https://min.io/docs/minio/linux/reference/minio-mc.html${RESET}"
-  exit 1
+  echo "You do not necessary need it, but it allows you to communicate with your MinIO server through the CLI"
 fi 
 
 # check if minikube exists
