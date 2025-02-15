@@ -1,0 +1,53 @@
+# Use an official NVIDIA base image to simplify GPU setup
+FROM nvidia/cuda:12.2.2-runtime-ubuntu22.04
+
+# Set environment variables to avoid interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install necessary packages: Python3, pip, curl, Docker client, and NVIDIA drivers
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    curl \
+    ca-certificates \
+    gnupg \
+    lsb-release \
+    software-properties-common && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install NVIDIA Container Toolkit to allow GPU passthrough
+RUN curl -fsSL https://nvidia.github.io/nvidia-container-runtime/gpgkey | gpg --dearmor -o /usr/share/keyrings/nvidia-container-runtime-keyring.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/nvidia-container-runtime-keyring.gpg] https://nvidia.github.io/nvidia-container-runtime/ubuntu22.04/$(ARCH) /" | tee /etc/apt/sources.list.d/nvidia-container-runtime.list && \
+    apt-get update && apt-get install -y nvidia-container-runtime && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install NVIDIA drivers (ensure the host machine already has GPU drivers installed)
+RUN apt-get update && apt-get install -y \
+    nvidia-driver-535 \
+    libnvidia-compute-535 && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install Docker client
+RUN mkdir -m 0755 -p /etc/apt/keyrings && \
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | tee /etc/apt/keyrings/docker.asc > /dev/null && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \
+    https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+    apt-get update && \
+    apt-get install -y docker-ce-cli && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Set up Docker client authentication
+ARG DOCKER_USERNAME
+ARG DOCKER_PASSWORD
+RUN echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+
+
+
+WORKDIR /usr/src/app
+
+COPY api.py .
+COPY publish.py .
+
+
+# Set default command
+CMD ["bash"]
