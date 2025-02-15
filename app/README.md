@@ -88,5 +88,11 @@ head over to the browser to via the bucket from
 ```
 http://192.168.49.2/minio/browser/mlflow-artifacts
 ```
-
 These values are set inside of the `/minio` `deployment.yaml`.
+
+
+
+Run latest built docker image on host network 
+```
+docker run --network host --rm $(docker images | head -n 2 | awk 'FNR == 2 {print $1":"$2}')
+```
