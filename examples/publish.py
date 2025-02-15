@@ -1,4 +1,5 @@
 import os
+import sys 
 import mlflow
 import json 
 from pathlib import Path
@@ -31,6 +32,7 @@ class QuestionAnsweringModel(mlflow.pyfunc.PythonModel):
 
 
 
+# docker_username="akinolawilson"
 
 model_name = "t5-small" # needed for image registry name
 title = "T5 Question and Answering" # fastapi title 
@@ -109,10 +111,11 @@ with mlflow.start_run(experiment_id=experiment.experiment_id, description=run_de
     
 
     if PUBLISH:
-        image_name = f"akinolawilson/{model_name}:{run_id[:8]}"
+        # using local docker client to publish image to remote registry
+        image_name = f"{os.getenv("DOCKER_USERNMAE", "akinolawilson")}/{model_name}:{run_id[:8]}"
         mlflow.set_tag("serving_container", image_name)
         mlflow.set_tag("local_inference", f"docker pull {image_name} && docker run --network host --rm {image_name}")
-    # Generate Dockerfile dynamically
+        # api environment variables.
         api_env=f"""
         FASTAPI_TITLE={title}
         FASTAPI_DESC={experiment_description}
@@ -127,12 +130,12 @@ with mlflow.start_run(experiment_id=experiment.experiment_id, description=run_de
         MLFLOW_S3_ENDPOINT_URL={os.getenv("MLFLOW_S3_ENDPOINT_URL","http://192.168.49.2")}
         MLFLOW_S3_IGNORE_TLS={os.getenv("MLFLOW_S3_IGNORE_TLS","true")}
         """
-
         with open( root / "api_env", "w") as f:
             f.write(api_env)
 
-        dockerfile_content = """\
-        FROM python:3.12 
+        # serving container Dockerfile string 
+        dockerfile_content = f"""
+        FROM python:{".".join(sys.version.split(" ")[0].split(".")[:-1])} 
         WORKDIR /usr/src/app
 
         RUN pip install fastapi pydantic uvicorn mlflow torch transformers python-dotenv sentencepiece boto3
@@ -155,5 +158,9 @@ with mlflow.start_run(experiment_id=experiment.experiment_id, description=run_de
         # also you will need the docker CLI tool install where ever this is is run, 
         # and have credentials for the respective registry that the image is pushed too.
 
-        os.system(f"docker build ./examples -t {image_name}")
+        os.system(f"docker build {root} -t {image_name}")
         os.system(f"docker push {image_name}")
+
+        # clean up 
+        os.remove(root / "Dockerfile")
+        os.remove(root / "api_env")
