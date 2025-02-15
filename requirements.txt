@@ -7,4 +7,7 @@ jsonargparse==4.35.0
 torchinfo==1.8.0
 boto3==1.36.18
 minio==7.2.15
-awscli==1.37.19 
+awscli==1.37.19
+transformers==4.48.3
+python-dotenv==1.0.1
+sentencepiece==0.2.0
