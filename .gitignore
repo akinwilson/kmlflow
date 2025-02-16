@@ -8,4 +8,6 @@ tokenizer/
 api_env
 api_examples.json
 Dockerfile
+fit.log
+.env
 
