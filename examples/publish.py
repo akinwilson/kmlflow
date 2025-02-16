@@ -112,7 +112,7 @@ with mlflow.start_run(experiment_id=experiment.experiment_id, description=run_de
 
     if PUBLISH:
         # using local docker client to publish image to remote registry
-        image_name = f"{os.getenv("DOCKER_USERNMAE", "akinolawilson")}/{model_name}:{run_id[:8]}"
+        image_name = f"{os.getenv("DOCKER_USERNAME", "akinolawilson")}/{model_name}:{run_id[:8]}"
         mlflow.set_tag("serving_container", image_name)
         mlflow.set_tag("local_inference", f"docker pull {image_name} && docker run --network host --rm {image_name}")
         # api environment variables.
@@ -163,4 +163,4 @@ with mlflow.start_run(experiment_id=experiment.experiment_id, description=run_de
 
         # clean up 
         os.remove(root / "Dockerfile")
-        os.remove(root / "api_env")
+        os.remove(root / "api_examples.json")
