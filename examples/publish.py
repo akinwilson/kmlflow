@@ -16,33 +16,18 @@ PUBLISH=True
 root = Path(__file__).parent 
 
 
-# for ease of use with downstream with FastAPI
-class QuestionAnsweringModel(mlflow.pyfunc.PythonModel):
-    def load_context(self, context):
-        self.tokenizer = T5Tokenizer.from_pretrained(context.artifacts["tokenizer"])
-        # self.tokenizer.to(device)
-        self.model = T5ForConditionalGeneration.from_pretrained(context.artifacts["model"])
-    
-    def predict(self, context, model_input : pd.DataFrame):
-        input_text = model_input.to_records()[0]  # Extract string safely
-        inputs = self.tokenizer(input_text[1], return_tensors="pt")
-        outputs = self.model.generate(**inputs)
-        return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-
-
-
-
-# docker_username="akinolawilson"
 
 model_name = "t5-small" # needed for image registry name
 title = "T5 Question and Answering" # fastapi title 
 artifact_path = "t5_qa_model" # mlflow artifact path for experiment 
 mlflow_track_uri = 'http://192.168.49.2/mlflow' # remote tracking uri 
+experiment_description = "Fine-tuned T5 model for question answering. Runs on GPU."
+
 
 
 # setting up experiment information 
 experiment_name = "_".join(title.lower().split(" "))
-experiment_description = "Fine-tuned T5 model for question answering. Runs on GPU."
+
 # this will be displayed at the top of the experiments in the MLflow UI
 run_description = f"""
 # Experiment
@@ -60,6 +45,12 @@ experiment = mlflow.get_experiment_by_name(experiment_name)
 
 # this needs to be set for the FastAPI swagger UI to have an example input and expect output
 # what inputs will your model expect? and what will the outputs be? Set this during fitting
+# schema info used by FastAPI, this needs to match the example above
+# i.e input_schema will have key-value part with key:question
+# ``  output_schema ``    ``   ``      ``    ``  key:answer 
+input_schema = Schema([ColSpec("string", "question")])
+output_schema = Schema([ColSpec("string", "answer")])
+signature = ModelSignature(inputs=input_schema, outputs=output_schema)
 FASTAPI_EXAMPLES = {
     "Request": {"question": "What is artificial intelligence?"},
     "Response": {"answer": "Artificial intelligence is the simulation of human intelligence in machines."},
@@ -67,27 +58,42 @@ FASTAPI_EXAMPLES = {
 with open(root / "api_examples.json", "w") as f:
     f.write(json.dumps(FASTAPI_EXAMPLES))
 
-# schema info used by FastAPI, this needs to match the example above
-# i.e input_schema will have key-value part with key:question 
-# ``  output_schema ``    ``   ``      ``    ``  key:answer 
-input_schema = Schema([ColSpec("string", "question")])
-output_schema = Schema([ColSpec("string", "answer")])
-signature = ModelSignature(inputs=input_schema, outputs=output_schema)
 
 
 
 
-# Load fine-tuned T5 model
-tokenizer = T5Tokenizer.from_pretrained(model_name)
-model = T5ForConditionalGeneration.from_pretrained(model_name)
 
-# Save artifacts locally and specify them in the artifacts dictionary 
-tokenizer.save_pretrained("tokenizer")
-model.save_pretrained("model")
-artifacts = {"tokenizer": "tokenizer", "model": "model"}
+# for ease of use with downstream with FastAPI
+class QuestionAnsweringModel(mlflow.pyfunc.PythonModel):
+    def load_context(self, context):
+        self.tokenizer = T5Tokenizer.from_pretrained(context.artifacts["tokenizer"])
+        # self.tokenizer.to(device)
+        self.model = T5ForConditionalGeneration.from_pretrained(context.artifacts["model"])
+    
+    def predict(self, context, model_input : pd.DataFrame):
+        input_text = model_input.to_records()[0]  # Extract string safely
+        inputs = self.tokenizer(input_text[1], return_tensors="pt")
+        outputs = self.model.generate(**inputs)
+        return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+
 
 
 with mlflow.start_run(experiment_id=experiment.experiment_id, description=run_description) as run:
+    
+    ############################################################
+    # training your model here #################################
+    ############################################################
+    # Load fine-tuned T5 model
+    tokenizer = T5Tokenizer.from_pretrained(model_name)
+    model = T5ForConditionalGeneration.from_pretrained(model_name)
+
+    # Save artifacts locally and specify them in the artifacts dictionary 
+    tokenizer.save_pretrained("tokenizer")
+    model.save_pretrained("model")
+    artifacts = {"tokenizer": "tokenizer", "model": "model"}
+
+
     mlflow.pyfunc.log_model(
         artifact_path=artifact_path,
         python_model=QuestionAnsweringModel(),
@@ -164,3 +170,4 @@ with mlflow.start_run(experiment_id=experiment.experiment_id, description=run_de
         # clean up 
         os.remove(root / "Dockerfile")
         os.remove(root / "api_examples.json")
+        os.remove(root / "api_env.json")

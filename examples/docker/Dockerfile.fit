@@ -1,0 +1,53 @@
+# Use an official NVIDIA base image to simplify GPU setup
+FROM nvidia/cuda:12.2.2-runtime-ubuntu22.04
+
+# Set environment variables to avoid interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install necessary packages: Python3, pip, curl, Docker client, and NVIDIA drivers
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    curl \
+    ca-certificates \
+    gnupg \
+    git \
+    lsb-release \
+    software-properties-common && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+
+
+# Add Docker's official GPG key and set up the stable repository
+RUN mkdir -m 0755 -p /etc/apt/keyrings && \
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
+    echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+    $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# Install Docker Engine, CLI, and containerd
+RUN apt-get update && apt-get install -y \
+    docker-ce \
+    docker-ce-cli \
+    containerd.io && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+
+
+
+# Create required directories
+RUN mkdir -p /usr/src/app/inputs
+# Start the Docker daemon in the background
+RUN dockerd &
+
+WORKDIR /usr/src/app
+
+COPY docker/requirements.txt . 
+RUN pip install -r requirements.txt 
+
+COPY api.py .
+COPY train.py .
+
+
+# Set default command
+CMD ["python3", "train.py" "--fast-api-title", 'T5 Question and Answering',"--d-model", "512", "--d-kv", "64", "--d-ff", "2048", "--layer-norm-epsilon", "1e-06", "--dropout-rate", "0.1"]
