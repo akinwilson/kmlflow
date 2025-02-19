@@ -35,8 +35,18 @@ metadata = ObjectMeta(
     namespace=namespace
 )
 
-# Algorithm specification.
-# options are: grid, bayesianoptimization, hyperband, tpe, multivariate-tpe, cmaes, sobol, pbt
+# HPO algorithm specification.
+# options are:
+#############################
+# - grid                    #
+# - bayesianoptimization    # 
+# - hyperband               #
+# - tpe                     #
+# - multivariate-tpe        #
+# - cmaes                   #
+# - sobol                   #
+# - pbt                     #
+############################# 
 # check out https://www.kubeflow.org/docs/components/katib/user-guides/hp-tuning/configure-algorithm/
 # for more information on the parameters for each blackbox-based optimisaiton algorithm 
 
@@ -86,20 +96,22 @@ trial_spec = {
                 }
             },
             "spec": {
+                "hostNetwork": true,
                 "containers": [
                     {
                         "name": "training-container",
                         "image": "akinolawilson/pytorch-train-gpu:latest",
-                        "command": [
-                            "python3",
-                            "/urs/src/train.py",
-                            "--fast-api-title='T5 Question and Answering'",
-                            "--d-model=512", 
-                            "--d-kv=64", 
-                            "--d-ff=2048",
-                            "--layer-norm-epsilon=${trialParameters.layerNormEpsilon}",
-                            "--dropout-rate=${trialParameters.dropout}",
-                        ],
+                        # "command": [
+                        #     "python3",
+                        #     "/urs/src/train.py",
+                        #     "--fast-api-title='T5 Question and Answering'",
+                        #     "--d-model=512", 
+                        #     "--d-kv=64", 
+                        #     "--d-ff=2048",
+                        #     "--layer-norm-epsilon=${trialParameters.layerNormEpsilon}",
+                        #     "--dropout-rate=${trialParameters.dropout}",
+                        # ],
+                        "command": ["sh", "-c", "dockerd & sleep 5 && python3 fit.py --fast-api-title 'T5 Question and Answering'  --max_epoch 10 --d-model 512 --d-kv 64 --d-ff 2048 --layer-norm-epsilon 1e-06 --dropout-rate 0.1"],
                         "env": [  # Set environment variables directly
                             {
                                 "name": "DOCKER_USERNAME",
