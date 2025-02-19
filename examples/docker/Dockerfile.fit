@@ -46,8 +46,8 @@ COPY docker/requirements.txt .
 RUN pip install -r requirements.txt 
 
 COPY api.py .
-COPY train.py .
+COPY fit.py .
 
 
 # Set default command
-CMD ["python3", "train.py" "--fast-api-title", 'T5 Question and Answering',"--d-model", "512", "--d-kv", "64", "--d-ff", "2048", "--layer-norm-epsilon", "1e-06", "--dropout-rate", "0.1"]
+CMD ["sh", "-c", "dockerd & sleep 5 && python3 fit.py --fast-api-title 'T5 Question and Answering' --d-model 512 --d-kv 64 --d-ff 2048 --layer-norm-epsilon 1e-06 --dropout-rate 0.1"]
