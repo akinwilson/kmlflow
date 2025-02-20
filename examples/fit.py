@@ -12,9 +12,6 @@ import logging
 import json
 import gdown
 import warnings 
-# # install
-# subprocess.check_call([sys.executable, "-m", "pip", "install", "git+https://github.com/akinwilson/babl.git@main#subdirectory=app/models"])
-# subprocess.check_call([sys.executable, "-m", "pip", "install", "git+https://github.com/mivade/argparse_dataclass.git@main"])
 
 
 from pytorch_lightning import Trainer
@@ -38,7 +35,7 @@ import argparse
 
 PUBLISH=True
 root = Path(__file__).parent 
-
+device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 # env variables 
 # for proposal.py 
@@ -90,7 +87,10 @@ class Fitter:
         mini_dataset = True, 
     ):
         self.model = model
+        self.model.to(device)
         self.tokenizer = tokenizer
+
+
         self.model_name = model_name
         self.args = data_args
         self.mini_dataset = mini_dataset
@@ -191,7 +191,7 @@ if __name__=="__main__":
 
     # Combine into a single argparse.Namespace
     args = argparse.Namespace(**vars(args), **vars(extra_args))
-
+    logger.info(f"args:\n\n{args.__dict__}\n\n")
     ## test hyperparameters 
     # parser.add_argument("--d-model", default=512)
     # parser.add_argument("--d-kv", default=64)

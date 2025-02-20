@@ -20,14 +20,7 @@ from kubeflow.katib import V1beta1TrialParameterSpec as TrialParameterSpec
 
 # Experiment name and namespace.
 namespace = "kubeflow"
-experiment_name = "t5-mlflow-bayesianoptimization-v2"
-
-# model_name = "t5-small" # needed for image registry name
-# title = "T5 Question and Answering" # fastapi title 
-# artifact_path = "t5_qa_model" # mlflow artifact path for experiment 
-# mlflow_track_uri = 'http://192.168.49.2/mlflow' # remote tracking uri 
-# experiment_description = "Fine-tuned T5 model for question answering. Runs on GPU."
-
+experiment_name = "t5-bay-opt-v2"
 
 
 metadata = ObjectMeta(
@@ -96,14 +89,14 @@ trial_spec = {
                 }
             },
             "spec": {
-                "hostNetwork": true,
+                "hostNetwork": True,
                 "containers": [
                     {
                         "name": "training-container",
                         "image": "akinolawilson/pytorch-train-gpu:latest",
                         # "command": [
                         #     "python3",
-                        #     "/urs/src/train.py",
+                        #     "/urs/src/fit.py",
                         #     "--fast-api-title='T5 Question and Answering'",
                         #     "--d-model=512", 
                         #     "--d-kv=64", 
@@ -111,7 +104,8 @@ trial_spec = {
                         #     "--layer-norm-epsilon=${trialParameters.layerNormEpsilon}",
                         #     "--dropout-rate=${trialParameters.dropout}",
                         # ],
-                        "command": ["sh", "-c", "dockerd & sleep 5 && python3 fit.py --fast-api-title 'T5 Question and Answering'  --max_epoch 10 --d-model 512 --d-kv 64 --d-ff 2048 --layer-norm-epsilon 1e-06 --dropout-rate 0.1"],
+                        #"command": ["sh -c dockerd & sleep 5 && python3 fit.py --fast-api-title 'T5 Question and Answering'  --max_epoch 10 --d-model 512 --d-kv 64 --d-ff 2048 --layer-norm-epsilon ${trialParameters.layerNormEpsilon} --dropout-rate ${trialParameters.dropout}"],
+                        "command": ["sh", "-c", "python3 fit.py --fast-api-title 'T5 Question and Answering' --d-model 512 --d-kv 64 --d-ff 2048 --layer-norm-epsilon ${trialParameters.layerNormEpsilon} --dropout-rate ${trialParameters.dropout}"],
                         "env": [  # Set environment variables directly
                             {
                                 "name": "DOCKER_USERNAME",
@@ -166,7 +160,22 @@ trial_spec = {
                             "limits": {
                                 "nvidia.com/gpu": 1
                             }
-                        }  # Added missing closing brace for "resources"
+                        },
+                        "volumeMounts": [
+                            {
+                                "name": "docker-socket",
+                                "mountPath": "/var/run/docker.sock"
+                            }
+                        ]
+                    }
+                ],
+                "volumes": [
+                    {
+                        "name": "docker-socket",
+                        "hostPath": {
+                            "path": "/var/run/docker.sock",
+                            "type": "Socket"
+                        }
                     }
                 ],
                 "restartPolicy": "Never"
@@ -174,6 +183,8 @@ trial_spec = {
         }
     }
 }
+
+
 
 # Configure parameters for the Trial template.
 trial_template=TrialTemplate(
@@ -199,8 +210,8 @@ experiment = Experiment(
     kind="Experiment",
     metadata=metadata,
     spec=ExperimentSpec(
-        max_trial_count=16,
-        parallel_trial_count=4,
+        max_trial_count=4,
+        parallel_trial_count=2,
         max_failed_trial_count=1,
         algorithm=algorithm_spec,
         objective=objective_spec,
