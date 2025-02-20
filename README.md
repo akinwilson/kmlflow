@@ -75,7 +75,7 @@ export AWS_DEFAULT_REGION="eu-west-2"
 export AWS_S3_FORCE_PATH_STYLE="true"
 export AWS_S3_ADDRESSING_PATH="path"
 export AWS_S3_SIGNATURE_VERSION="s3v4"
-export MLFLOW_S3_ENDPOINT_URL="http://192.168.49.2"
+export MLFLOW_S3_ENDPOINT_URL="http://192.168.49.2" # "http://192.168.49.2"
 export MLFLOW_S3_IGNORE_TLS="true"
 export MLFLOW_TRACKING_URI="http://192.168.49.2/mlflow"
 export MLFLOW_ARTIFACT_PATH="t5_qa_model" # experiment-specific
@@ -110,17 +110,53 @@ visit the [MLFlow UI](http://192.168.49.2/mlflow/#) and find your experiement. U
 
 
 
-## To do Feb 11 2024
+## To do Feb 20 2025
 
-- [ ] Deploy [ArgoCD](https://argo-cd.readthedocs.io/en/stable/) and the [seldon core](https://docs.seldon.io/projects/seldon-core/en/latest/index.html) operator to deploy models. Seldon core allows to easily choose a variety of deployment strategies like A/B testing, single deployment, canary, blue-green or shadow deployments. With ArgoCD, a GitOps alined deployment management can be established. 
+- [ ] Deploy [ArgoCD](https://argo-cd.readthedocs.io/en/stable/) and the [seldon core](https://docs.seldon.io/projects/seldon-core/en/latest/index.html) operator to deploy models. Seldon core allows to easily choose a variety of deployment strategies like A/B testing, single deployment, canary, blue-green or shadow deployments. With ArgoCD, a GitOps alined deployment management can be established. (fix current ArogCD issue)
+```bash
+time="2025-02-20T09:44:57Z" level=info msg="ArgoCD API Server is starting" built="2022-10-25T14:40:01Z" commit=b895da457791d56f01522796a8c3cd0f583d5d91 namespace=argocd port=8080 version=v2.5.0+b895da4
+time="2025-02-20T09:44:57Z" level=info msg="Starting configmap/secret informers"
+time="2025-02-20T09:44:57Z" level=info msg="Configmap/secret informer synced"
+time="2025-02-20T09:44:57Z" level=fatal msg="configmap \"argocd-cm\" not found"
+Stream closed EOF for argocd/argocd-server-65b974ff96-g48tx (argocd-server)
+```
 
 - [ ] customise the mlflow server to allow for deployments via registration in the model registry UI. Given a  serving image uri, let users deploy a model using either one of the strategies; single deployment, A/B testing,  canary, blue-green or shadow deployment. This should work via the UI triggering a webhook to update to the github repository which ArgoCD is watching, providing a serving image URI to be deployed. 
 
 
 - [ ] Fix landing page of MinIO. Currently, need to programmatically create the bucket during the deployment of the cluster. When logging into the minio service, you're supposed to be redirect to the web UI for all buckets, but a blank screen appears instead. Buckets can only be viewed via a direct URL, and created programmatically like in the `./app/deploy.sh` script. Need to configure `./app/minio/deployment.yaml` to ingress objects to correctly redirect to the land page of MiniIO after after logging into. i.e 
-`https://192.168.49.2/minio/login` should redirect correctly to `http://192.168.49.2/minio/browser` but this is currently a blank screen. Have requested for help [here](https://stackoverflow.com/questions/79441292/minio-browser-acccess-issue-login-page-appears-without-issue-and-so-do-buckets)
+`https://192.168.49.2/minio/login` should redirect correctly to `http://192.168.49.2/minio/browser` but this is currently a blank screen. Have requested for help [here](https://stackoverflow.com/questions/79441292/minio-browser-acccess-issue-login-page-appears-without-issue-and-so-do-buckets). 
 
-- [ ]  Build a `kmlflow` landing page. As the stack of applications broadens and the system becomes more production-ready, it would be nice to have a landing page which could provide a webUI to navigate between the various services; minio, mlflow, katib, dashboard etc. 
+You can change the `MINIO_SERVER_URL`="http://minio-service.mlflow.svc.cluster.local:9000/" and the minio UI works, but this breaks the MLFlow clients ablitiy to communicate with the service from outside the cluster. 
+Even when defining an ingress just for the api, like `/minio-api` the `signature` error appears and boto refuses to upload to the bucket.
+
+**NOTE** In `app/deploy.sh`, did not change 
+```bash
+echo "Creating artifact bucket: mlflow-artifacts ..."
+aws --endpoint-url http://192.168.49.2 s3api create-bucket \
+    --bucket mlflow-artifacts \
+    --region eu-west-2 \
+    --no-verify-ssl || \
+    echo "Bucket mlflow-artifacts already exists"
+```
+to
+```bash
+echo "Creating artifact bucket: mlflow-artifacts ..."
+aws --endpoint-url http://192.168.49.2/minio-api s3api create-bucket \
+    --bucket mlflow-artifacts \
+    --region eu-west-2 \
+    --no-verify-ssl || \
+    echo "Bucket mlflow-artifacts already exists"
+```
+and one of the errors was, outside of the `signature` error, was that the `bucket did not exist`. 
+
+Need to fix this to make `grafana`'s UI available. Currently, the /grafana path is redirected to the minio landing page. due to the ingress rule the the minio server has 
+
+
+- [ ] deploy `grafana` and `prometheus` to allow seldom deployments to be tracked. Need to fix the minio issue first since `https://192.168.49.2/grafana/` is redirect to minio 
+
+
+- [ ]  Build a `kmlflow` landing page. Framework has already been deployed, but is not working as expected. 
 
 
 
