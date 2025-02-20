@@ -72,7 +72,7 @@ echo ""
 
 # Ensure /data exists inside Minikube
 echo "Ensuring /data directory exists inside Minikube..."
-minikube ssh -- "sudo mkdir -p /data/katib && sudo mkdir -p /data/mlflow && sudo mkdir -p /data/minio && sudo chmod -R 777 /data"
+minikube ssh -- "sudo mkdir -p /data/katib && sudo mkdir -p /data/argo && sudo mkdir -p /data/prometheus && sudo mkdir -p /data/grafana  && sudo chown -R 472:472 /data/grafana && sudo mkdir -p /data/mlflow && sudo mkdir -p /data/minio && sudo chmod -R 777 /data"
 echo "/data directory is ready."
 echo ""
 echo ""
@@ -139,6 +139,62 @@ while ! kubectl get pods -n mlflow -l app=minio -o jsonpath='{.items[*].status.c
   sleep 5
 done
 echo "MinIO is ready."
+echo ""
+echo ""
+
+
+
+echo "Install kmlflow UI ...."
+kubectl apply -f "$SCRIPT_DIR/ui/deployment.yaml"
+echo ""
+echo ""
+
+echo "Install Grafana ...."
+kubectl apply -f "$SCRIPT_DIR/grafana/deployment.yaml"
+echo ""
+echo ""
+
+
+echo "Install Promethus ...."
+kubectl apply -f "$SCRIPT_DIR/prometheus/deployment.yaml"
+echo ""
+echo ""
+
+echo "Install seldon core ...."
+kubectl apply -f "$SCRIPT_DIR/seldon/deployment.yaml"
+echo ""
+echo ""
+
+echo "Installing ArgoCD ..."
+
+kubectl apply -f "$SCRIPT_DIR/argocd/ns.yaml"
+kubectl apply -f "$SCRIPT_DIR/argocd/cm.yaml"
+
+# Set a counter for retries and maximum number of attempts
+MAX_RETRIES=10
+RETRY_DELAY=10  # seconds
+RETRY_COUNT=0
+
+# Retry loop
+while ! kubectl apply -f "$SCRIPT_DIR/argocd/deployment.yaml"; do
+  RETRY_COUNT=$((RETRY_COUNT+1))
+  if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+    echo "Deployment failed after $MAX_RETRIES attempts. Exiting."
+    exit 1
+  fi
+  echo "Deployment failed. Retrying in $RETRY_DELAY seconds..."
+  sleep $RETRY_DELAY
+done
+
+echo "ArgoCD deployed successfully!"
+echo ""
+echo ""
+
+# echo "Install ArgoCD ...."
+# kubectl apply -f "$SCRIPT_DIR/argocd/deployment.yaml"
+# echo ""
+# echo ""
+
 
 # Apply the Ingress objects to expose services
 echo "Creating Ingress objects for services ..."
@@ -162,7 +218,8 @@ echo "Creating artifact bucket: mlflow-artifacts ..."
 aws --endpoint-url http://192.168.49.2 s3api create-bucket \
     --bucket mlflow-artifacts \
     --region eu-west-2 \
-    --no-verify-ssl
+    --no-verify-ssl || \
+    echo "Bucket mlflow-artifacts already exists"
 echo ""
 echo ""
 
@@ -177,16 +234,27 @@ echo -e "${GREEN}https://192.168.49.2/katib${RESET}"
 echo "To access MLFlow's user interface head to:"
 echo -e "${GREEN}https://192.168.49.2/mlflow/#${RESET}"
 
+# echo "To access ArgoCD's user interface head to:"
+# echo -e "${GREEN}https://192.168.49.2/argo/${RESET}"
+
+# echo "To access Grafana's user interface head to:"
+# echo -e "${GREEN}https://192.168.49.2/grafana/${RESET}"
+
 echo "To access MinIO's user interface for the bucket:"
 echo -e "${GREEN}http://192.168.49.2/minio/browser/mlflow-artifacts${RESET}"
 echo ""
 echo ""
 
+echo "To access the MinIO UI, you will need the username and password which are:"
+echo -e "username:${MAGENTA}minioaccesskey${RESET}"
+echo -e "password:${MAGENTA}miniosecretkey123${RESET}"
+echo ""
+echo ""
 
 echo "To access the dashboard, you will need a token for the user."
 echo -e "You can create a token via running the command: ${MAGENTA}kubectl create token user${RESET}"
 TOKEN=$(kubectl create token user) 
-
+echo ""
 echo "Here is a token to start with:"
 echo ""
 echo -e "${CYAN}$TOKEN${RESET}"

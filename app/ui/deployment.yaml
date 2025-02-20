@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ui
+---
+apiVersion: v1 
+kind: ServiceAccount
+metadata:
+  name: ui-sa
+  namespace: ui 
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kmlflow-ui
+  namespace: ui 
+  labels:
+    app: kmlflow-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kmlflow-ui
+  template:
+    metadata:
+      labels:
+       app: kmlflow-ui
+    spec:
+      containers:
+        - name: kmlflow-ui
+          image: akinolawilson/kmlflow-ui:latest
+          imagePullPolicy: Always 
+          ports:
+          - containerPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kmlflow-ui
+  namespace: ui 
+
+spec:
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: ClusterIP
+  selector:
+    app: kmlflow-ui
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kmlflow-ui-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  rules:
+    - http:
+        paths:
+        - path: /kmlflow # (/|$)(.*)
+          pathType: Prefix # ImplementationSpecific
+          backend:
+            service:
+              name: kmlflow-ui
+              port:
+                number: 80

@@ -53,11 +53,11 @@ spec:
             value: "path"
           - name: AWS_S3_FORCE_PATH_STYLE
             value: "true"
-          - name: export AWS_S3_SIGNATURE_VERSION
+          - name: AWS_S3_SIGNATURE_VERSION
             value: "s3v4"
 
           - name: MLFLOW_S3_ENDPOINT_URL
-            value: "http://192.168.49.2"  # ingress url for MinIO service
+            value: "http://192.168.49.2" #"http://minio-service.mlflow.svc.cluster.local:9000" # "http://192.168.49.2/minio-api"  # ingress url for MinIO service
           - name: MLFLOW_S3_IGNORE_TLS
             value: "true"
 

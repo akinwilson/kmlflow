@@ -58,7 +58,7 @@ spec:
             - name: MINIO_CORS_ALLOW_ORIGIN
               value: "*"
             - name: MINIO_SERVER_URL
-              value: "http://192.168.49.2"
+              value: "http://192.168.49.2"   # this setting allows the browser to be visible, but makes the mlflow client disfunctional "http://minio-service.mlflow.svc.cluster.local:9000/" #  "http://192.168.49.2/"
             - name: MINIO_ROOT_USER
               value: "minioaccesskey"  # Change this
             - name: MINIO_ROOT_PASSWORD
@@ -133,6 +133,7 @@ metadata:
   name: minio-api-ingress
   namespace: mlflow
   annotations:
+      nginx.ingress.kubernetes.io/use-regex: "true"
       nginx.ingress.kubernetes.io/rewrite-target: /
       nginx.ingress.kubernetes.io/proxy-body-size: 1000m
 spec:
@@ -141,7 +142,7 @@ spec:
     - http:
         paths:
           - path: /
-            pathType: Prefix
+            pathType: Prefix #  ImplementationSpecific #  Prefix
             backend:
               service:
                 name: minio-service
