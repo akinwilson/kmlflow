@@ -156,45 +156,6 @@ class Fitter:
         return self
 
 
-# class SystemMetrics:
-#     '''
-#     Monitors resource utilisation: GPU compute and memory
-#                                    CPU compute and memory 
-#     '''
-#     def __init__(self, interval=5):
-#         self.interval = interval
-
-#     # Function to log system metrics in the background
-#     def log_system_metrics(self):
-#         with mlflow.start_run(nested=True):  # Use a nested run to avoid conflicts
-#             while True:
-#                 cpu_usage = psutil.cpu_percent(interval=1) # once every 5 seconds
-#                 ram_usage = psutil.virtual_memory().percent
-
-#                 mlflow.system_metrics.log("cpu_usage", cpu_usage)
-#                 mlflow.system_metrics.log("ram_usage", ram_usage)
-
-#                 # Log GPU metrics if available
-#                 gpus = GPUtil.getGPUs()
-#                 for i, gpu in enumerate(gpus):
-#                     mlflow.system_metrics.log(f"gpu_{i}_memory", gpu.memoryUtil * 100)
-#                     mlflow.system_metrics.log(f"gpu_{i}_load", gpu.load * 100)
-
-#                 time.sleep(self.interval)
-
-#     # Start logging in a background thread
-#     def start_system_monitoring(self):
-#         monitoring_thread = threading.Thread(target=self.log_system_metrics, daemon=True)
-#         monitoring_thread.start()
-#         return monitoring_thread
-
-#     def __call__(self):
-#         return self.start_system_monitoring()
-
-
-
-
-
 
 if __name__=="__main__":
     # see:
@@ -439,6 +400,9 @@ if __name__=="__main__":
             os.remove(root / "Dockerfile")
             os.remove(root / "api_examples.json")
             os.remove(root / "api_env")
-
+            # complete script and exit with no errors
+            sys.exit(0)
+        # complete script and exit with no errors
+        sys.exit(0)
 
 
