@@ -104,7 +104,7 @@ metadata:
     nginx.ingress.kubernetes.io/rewrite-target: /$2
     nginx.ingress.kubernetes.io/add-base-url: "true"
     nginx.ingress.kubernetes.io/use-regex: "true"
-    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/proxy-body-size: "100g" # let 100GB be uploaded via the ui
     nginx.ingress.kubernetes.io/x-content-type-options: "nosniff"
     # websocket config
     nginx.ingress.kubernetes.io/enable-websockets: "true"    
@@ -135,7 +135,7 @@ metadata:
   annotations:
       nginx.ingress.kubernetes.io/use-regex: "true"
       nginx.ingress.kubernetes.io/rewrite-target: /
-      nginx.ingress.kubernetes.io/proxy-body-size: 1000m
+      nginx.ingress.kubernetes.io/proxy-body-size: 100g # let 100GB be uploaded via the ui
 spec:
   ingressClassName: nginx
   rules:
