@@ -1,0 +1,79 @@
+# Use an official NVIDIA base image to simplify GPU setup
+FROM nvidia/cuda:12.2.2-runtime-ubuntu22.04
+
+# Set environment variables to avoid interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+# Define build arguments
+ARG AWS_ACCESS_KEY_ID
+ARG AWS_SECRET_ACCESS_KEY
+ARG MINIO_DATA_BUCKET_NAME
+ARG MINIO_ENDPOINT_URL
+ARG AWS_DEFAULT_REGION
+# Set environment variables
+ENV AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+ENV AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+ENV MINIO_DATA_BUCKET_NAME=$MINIO_DATA_BUCKET_NAME
+ENV MINIO_ENDPOINT_URL=$MINIO_ENDPOINT_URL
+ENV AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION
+# Install necessary packages: Python3, pip, curl, Docker client, and NVIDIA drivers
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    curl \
+    ca-certificates \
+    gnupg \
+    git \
+    s3fs \
+    lsb-release \
+    software-properties-common \
+    systemd \
+    sudo \
+    vim \
+    awscli \
+    libsystemd-dev && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+
+# Create data directories
+RUN mkdir -p /usr/src/app/inputs
+
+# preparing fitting data, syncing datasets
+RUN aws --endpoint-url ${MINIO_ENDPOINT_URL} \
+        s3 sync \
+        s3://${MINIO_DATA_BUCKET_NAME}/text2text/QA /usr/src/app/inputs \
+        --region $AWS_DEFAULT_REGION \
+        --no-verify-ssl 
+
+
+# Add Docker's official GPG key and set up the stable repository
+RUN mkdir -m 0755 -p /etc/apt/keyrings && \
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
+    echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+    $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# Install Docker Engine, CLI, and containerd
+RUN apt-get update && apt-get install -y \
+    docker-ce \
+    docker-ce-cli \
+    containerd.io && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+
+WORKDIR /usr/src/app
+
+
+COPY docker/requirements.txt . 
+RUN pip install -r requirements.txt 
+
+RUN mkdir -p /var/log/katib
+RUN chmod a+w /var/log/katib
+
+RUN chmod -R  777 /var/log/katib/
+RUN touch /var/log/katib/metrics.log
+COPY api.py .
+COPY fit.py .
+
+
+# Set default command
+CMD ["sh", "-c", "python3 fit.py --fast-api-title 'T5 Question and Answering' --d-model 512 --d-kv 64 --d-ff 2048 --layer-norm-epsilon 1e-06 --dropout-rate 0.1"]

@@ -22,13 +22,13 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build ./app/dockerfile -f ./app/dockerfile/Dockerfile.mlflow -t mlflow
+          docker build ./app/ui -f ./app/docker/Dockerfile.ui -t kmlflow-ui
 
       - name: Tag Docker image
         run: |
-          docker tag mlflow akinolawilson/mlflow:latest
+          docker tag kmlflow-ui akinolawilson/kmlflow-ui:latest
 
       - name: Push Docker image to Docker Hub
         run: |
-          docker push akinolawilson/mlflow:latest
+          docker push akinolawilson/kmlflow-ui:latest
 

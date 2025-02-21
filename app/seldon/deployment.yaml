@@ -1,0 +1,49 @@
+# Namespace for Seldon Core
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: seldon-system
+# Seldon Core Operator Deployment
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: seldon-controller-manager
+  namespace: seldon-system
+  labels:
+    app: seldon
+    component: seldon-controller-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: seldon
+      component: seldon-controller-manager
+  template:
+    metadata:
+      labels:
+        app: seldon
+        component: seldon-controller-manager
+    spec:
+      serviceAccountName: seldon-manager
+      containers:
+        - name: manager
+          image: docker.io/seldonio/seldon-core-operator:1.19.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--enable-leader-election"
+          ports:
+            - containerPort: 8080
+              name: metrics
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10

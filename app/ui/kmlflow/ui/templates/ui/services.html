@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ service_name }} UI</title>
+    <style>
+        /* Styles for tabs */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            margin: 0 10px;
+            background-color: #444;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .tab:hover {
+            background-color: #666;
+        }
+        .active {
+            background-color: #007bff;
+        }
+    </style>
+    <script>
+        function openService(service) {
+            document.getElementById('iframe').src = service;
+        }
+    </script>
+</head>
+<body>
+    <nav class="tabs">
+        <div class="tab" onclick="window.location.href='/'">Home</div>
+        <div class="tab active" onclick="openService('/mlflow')">MLflow</div>
+        <div class="tab" onclick="openService('/katib')">Katib</div>
+        <div class="tab" onclick="openService('/minio')">MinIO</div>
+        <div class="tab" onclick="openService('/prometheus')">Prometheus</div>
+        <div class="tab" onclick="openService('/grafana')">Grafana</div>
+        <div class="tab" onclick="openService('/argocd')">ArgoCD</div>
+    </nav>
+
+    <!-- iframe to display the selected service UI -->
+    <iframe id="iframe" src="{{ service_url }}" width="100%" height="800px"></iframe>
+</body>
+</html>

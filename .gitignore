@@ -3,3 +3,11 @@ k8s/
 volume/
 data/
 dataset/
+model/
+tokenizer/
+api_env
+api_examples.json
+Dockerfile
+fit.log
+.env
+

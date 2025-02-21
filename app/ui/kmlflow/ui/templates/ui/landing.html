@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Kmlflow UI</title>
+    <style>
+        /* Basic styles for tab navigation */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            margin: 0 10px;
+            background-color: #444;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .tab:hover {
+            background-color: #666;
+        }
+        .active {
+            background-color: #007bff;
+        }
+    </style>
+</head>
+<body style="background-color: black; color: white; text-align: center;">
+    <pre>{{ ascii_art }}</pre>
+
+    <!-- Tabs for navigation -->
+    <div class="tabs">
+        <div class="tab active" onclick="window.location.href='/'">Home</div>
+        <div class="tab" onclick="window.location.href='/ui'">UI</div>
+        <div class="tab" onclick="window.location.href='/service/mlflow'">MLflow</div>
+        <div class="tab" onclick="window.location.href='/service/katib'">Katib</div>
+        <div class="tab" onclick="window.location.href='/service/minio'">MinIO</div>
+        <div class="tab" onclick="window.location.href='/service/prometheus'">Prometheus</div>
+        <div class="tab" onclick="window.location.href='/service/grafana'">Grafana</div>
+        <div class="tab" onclick="window.location.href='/service/argocd'">ArgoCD</div>
+    </div>
+</body>
+</html>

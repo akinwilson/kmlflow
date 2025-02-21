@@ -1,0 +1,61 @@
+apiVersion: machinelearning.seldon.io/v1
+kind: SeldonDeployment
+metadata:
+  name: ${APPLICATION_NAME}
+  namespace: seldon
+spec:
+  protocol: kfserving  # Use KFServing protocol (optional)
+  predictors:
+    - name: default
+      replicas: 2
+      componentSpecs:
+        - spec:
+            containers:
+              - name: serving-container
+                image: ${SERVING_IMAGE_URI}
+
+      traffic: 50  # Traffic percentage for this predictor
+      shadow: false
+      canary: false
+      rollingUpdate: false
+
+    - name: canary
+      replicas: 1
+      componentSpecs:
+        - spec:
+            containers:
+              - name: serving-container
+                image: ${SERVING_IMAGE_URI}
+      traffic: 20  # Traffic percentage for this predictor
+      canary: true  # Enable canary deployment
+
+    - name: shadow
+      replicas: 1
+      componentSpecs:
+        - spec:
+            containers:
+              - name: serving-container
+                image: ${SERVING_IMAGE_URI}
+      traffic: 0  # No traffic, shadow mode
+      shadow: true  # Enable shadow deployment
+
+    - name: abtest
+      replicas: 1
+      componentSpecs:
+        - spec:
+            containers:
+              - name: serving-container
+                image: ${SERVING_IMAGE_URI}
+
+      traffic: 30  # Traffic percentage for this predictor
+      abtest: true  # Enable A/B testing
+
+    - name: rolling-update
+      replicas: 2
+      componentSpecs:
+        - spec:
+            containers:
+              - name: serving-container
+                image: ${SERVING_IMAGE_URI}
+      traffic: 0  # No traffic, used for rolling updates
+      rollingUpdate: true  # Enable rolling update strategy
