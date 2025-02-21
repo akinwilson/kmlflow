@@ -69,6 +69,8 @@ RUN pip install -r requirements.txt
 RUN mkdir -p /var/log/katib
 RUN chmod a+w /var/log/katib
 
+RUN chmod -R  777 /var/log/katib/
+RUN touch /var/log/katib/metrics.log
 COPY api.py .
 COPY fit.py .
 
