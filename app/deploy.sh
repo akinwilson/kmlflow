@@ -259,7 +259,12 @@ aws --endpoint-url http://192.168.49.2 s3api put-object \
 echo ""
 echo ""
 
-
+echo "Altering inotify setting and increasing user watches and user instances ... "
+echo "fs.inotify.max_user_watches=524288" | sudo tee -a /etc/sysctl.conf
+echo "fs.inotify.max_user_instances=128000" | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p
+echo ""
+echo ""
 
 echo "Removing downloaded data arfifacts ..."
 rm 50k.jsonl 
