@@ -75,9 +75,11 @@ export AWS_DEFAULT_REGION="eu-west-2"
 export AWS_S3_FORCE_PATH_STYLE="true"
 export AWS_S3_ADDRESSING_PATH="path"
 export AWS_S3_SIGNATURE_VERSION="s3v4"
+export MINIO_DATA_BUCKET_NAME="data"
 export MLFLOW_S3_ENDPOINT_URL="http://192.168.49.2" # "http://192.168.49.2"
 export MLFLOW_S3_IGNORE_TLS="true"
 export MLFLOW_TRACKING_URI="http://192.168.49.2/mlflow"
+export MLFLOW_ENABLE_SYSTEM_METRICS_LOGGING="true"
 export MLFLOW_ARTIFACT_PATH="t5_qa_model" # experiment-specific
 export MODEL_NAME="t5"  # is is specific to  proposal.py  and how babl the library is configured to load models
 export DOCKER_USERNAME="akinolawilson"
@@ -92,10 +94,7 @@ Then to see how the system works, run for MLFlow tracking example and visit the 
 ```bash 
 python examples/track.py
 ```
-Run the Katib example to see how the hyperparameter optimisation process works in the context of an proposed experiment, visit it's respective [Katib UI](http://192.168.49.2/katib/). 
-```bash
-python examples/proposal.py
-``` 
+
 **WARNING**
 The following file assumes you have an account and remote docker registry, like with [docker hub](https://hub.docker.com/), and are logged into the registry at the command line level, see the [documentation](https://docs.docker.com/reference/cli/docker/login/) on how to login at the CLI into your registry. You may upload as many public repositories as you please. 
 
@@ -103,9 +102,13 @@ To publish a serving container alongside your trained model using the MLFlow ser
 ```bash
 python examples/publish.py
 ```
-
 visit the [MLFlow UI](http://192.168.49.2/mlflow/#) and find your experiement. Under the `tag` section, information on how to serve the model locally is provided. 
 
+
+Run the Katib example to see how the hyperparameter optimisation process works in the context of an proposed experiment, visit it's respective [Katib UI](http://192.168.49.2/katib/). 
+```bash
+python examples/proposal.py
+``` 
 
 
 
