@@ -20,7 +20,7 @@ from kubeflow.katib import V1beta1TrialParameterSpec as TrialParameterSpec
 
 # Experiment name and namespace.
 namespace = "kubeflow"
-experiment_name = "t5-bay-opt-v3"
+experiment_name = "t5-bay-opt-v5"
 
 
 metadata = ObjectMeta(
@@ -94,18 +94,15 @@ trial_spec = {
                     {
                         "name": "training-container",
                         "image": "akinolawilson/pytorch-train-gpu:latest",
-                        # "command": [
-                        #     "python3",
-                        #     "/urs/src/fit.py",
-                        #     "--fast-api-title='T5 Question and Answering'",
-                        #     "--d-model=512", 
-                        #     "--d-kv=64", 
-                        #     "--d-ff=2048",
-                        #     "--layer-norm-epsilon=${trialParameters.layerNormEpsilon}",
-                        #     "--dropout-rate=${trialParameters.dropout}",
-                        # ],
-                        #"command": ["sh -c dockerd & sleep 5 && python3 fit.py --fast-api-title 'T5 Question and Answering'  --max_epoch 10 --d-model 512 --d-kv 64 --d-ff 2048 --layer-norm-epsilon ${trialParameters.layerNormEpsilon} --dropout-rate ${trialParameters.dropout}"],
-                        "command": ["sh", "-c", "python3 fit.py --fast-api-title 'T5 Question and Answering' --d-model 512 --d-kv 64 --d-ff 2048 --layer-norm-epsilon ${trialParameters.layerNormEpsilon} --dropout-rate ${trialParameters.dropout}"],
+                        
+                        "command": ["python3", "/usr/src/app/fit.py"],
+                        "args": ["--fast-api-title", "'T5 Question and Answering'",
+                                "--d-model","512",
+                                " --d-kv", "64",
+                                "--d-ff","2048",
+                                "--layer-norm-epsilon","${trialParameters.layerNormEpsilon}",
+                                "--dropout-rate","${trialParameters.dropout}"],
+
                         "env": [  # Set environment variables directly
                             {
                                 "name": "DOCKER_USERNAME",
@@ -152,9 +149,21 @@ trial_spec = {
                                 "value":os.getenv("MLFLOW_TRACKING_URI","http://192.168.49.2/mlflow")
                             }, 
                             {
+                                "name":"MODEL_NAME",
+                                "value":os.getenv("MODEL_NAME","t5")
+                            }, 
+                            {
                                 "name":"MLFLOW_ARTIFACT_PATH",
                                 "value":os.getenv("MLFLOW_ARTIFACT_PATH","t5_qa_model")
                             }, 
+                            {
+                                "name":"MINIO_DATA_BUCKET_NAME",
+                                "value":os.getenv("MINIO_DATA_BUCKET_NAME","data")
+                            }, 
+                            {
+                                "name": "KATIB_EXPERIMENT_NAME",
+                                "value": experiment_name
+                            },
                         ],
                         "resources": {
                             "limits": {
