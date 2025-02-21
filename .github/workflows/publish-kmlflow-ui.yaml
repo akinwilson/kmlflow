@@ -22,7 +22,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build ./app/kmlflow -f ./app/docker/Dockerfile.ui -t kmlflow-ui
+          docker build ./app/ui -f ./app/docker/Dockerfile.ui -t kmlflow-ui
 
       - name: Tag Docker image
         run: |

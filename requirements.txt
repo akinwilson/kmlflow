@@ -12,3 +12,4 @@ transformers==4.48.3
 python-dotenv==1.0.1
 sentencepiece==0.2.0
 gdown==5.2.0
+s3fs==2025.2.0
