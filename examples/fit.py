@@ -1,7 +1,9 @@
 '''
-fitting a model using katib client. 
+fitting a model using katib client to perform HPO 
 
-the train.py is supposed to be used from inside the docker/Dockerfile.fit
+the fit.py is supposed to be executed from inside the docker/Dockerfile.fit
+
+checkout the docker/Dockerfile.fit to see how the fitting dataset is supplied 
 '''
 import os,sys 
 import mlflow 
@@ -10,10 +12,7 @@ import subprocess
 import pandas as pd
 import logging 
 import json
-import gdown
 import warnings 
-
-
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import TensorBoardLogger
 from pathlib import Path
@@ -31,15 +30,18 @@ from mlflow.types import Schema, ColSpec
 from lightning.pytorch.loggers import MLFlowLogger
 from babl.config import Args
 import argparse
+import textwrap
+import threading
+# import GPUtil # gather system metrics gpu and vram 
+# import psutil # ``       ``     ``    cpu  and ram
 
 
-PUBLISH=True
+
 root = Path(__file__).parent 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 # env variables 
 # for proposal.py 
-
 
 # KATIB_EXPERIMENT_NAME: The name of the Katib experiment.
 # KATIB_TRIAL_NAME: The name of the current trial.
@@ -61,22 +63,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-## download fitting data 
-
-# 50k.jsonl
-logger.info("Downloading 50k.jsonl data ... ")
-file_id_50k = "1enHDeeAySxoNIGvSew6Y5aFxBjEVe01w"
-gdown.download(url=f"https://drive.google.com/uc?id={file_id_50k}", output="/usr/src/app/inputs/50k.jsonl", quiet=True)
-
-# 10k.jsonl
-logger.info("Downloading 10k.jsonl data ... ")
-file_id_10k = "1IuywHW-sjNDfMXssOimDwvvbeMaUKstq"
-gdown.download(url=f"https://drive.google.com/uc?id={file_id_10k}", output="/usr/src/app/inputs/10k.jsonl", quiet=True)
-
-
-
-
-
 class Fitter:
     def __init__(
         self,
@@ -84,12 +70,14 @@ class Fitter:
         tokenizer,
         model_name,
         data_args,
-        mini_dataset = True, 
+        run_id,
+        mini_dataset = True,
+        
     ):
         self.model = model
         self.model.to(device)
         self.tokenizer = tokenizer
-
+        self.run_id = run_id
 
         self.model_name = model_name
         self.args = data_args
@@ -116,11 +104,8 @@ class Fitter:
             save_dir=self.args.model_dir,
             name="lightning_logs",
         )
-        # Model = self.model
-        # get loaders and datamodule to access input shape
         train_loader, val_loader, test_loader = self.setup()
         print("Created training, validating and test loaders .... ")
-        # get input shape for onnx exporting
         # setup training, validating and testing routines for the model
         routine = Routine(self.model)
 
@@ -135,7 +120,9 @@ class Fitter:
 
 
         experiment_name = os.getenv("KATIB_EXPERIMENT_NAME","_".join(args.fast_api_title.lower().split(" ")))
-        mlf_logger = MLFlowLogger(experiment_name=experiment_name, tracking_uri=os.getenv("MLFLOW_TRACKING_URI","http://192.168.49.2/mlflow"))
+        mlf_logger = MLFlowLogger(experiment_name=experiment_name,
+                                  tracking_uri=os.getenv("MLFLOW_TRACKING_URI","http://192.168.49.2/mlflow"),
+                                  run_id=self.run_id)
 
         self.trainer = Trainer(
             accelerator="gpu" if torch.cuda.is_available() else "cpu" ,
@@ -169,36 +156,70 @@ class Fitter:
         return self
 
 
+# class SystemMetrics:
+#     '''
+#     Monitors resource utilisation: GPU compute and memory
+#                                    CPU compute and memory 
+#     '''
+#     def __init__(self, interval=5):
+#         self.interval = interval
+
+#     # Function to log system metrics in the background
+#     def log_system_metrics(self):
+#         with mlflow.start_run(nested=True):  # Use a nested run to avoid conflicts
+#             while True:
+#                 cpu_usage = psutil.cpu_percent(interval=1) # once every 5 seconds
+#                 ram_usage = psutil.virtual_memory().percent
+
+#                 mlflow.system_metrics.log("cpu_usage", cpu_usage)
+#                 mlflow.system_metrics.log("ram_usage", ram_usage)
+
+#                 # Log GPU metrics if available
+#                 gpus = GPUtil.getGPUs()
+#                 for i, gpu in enumerate(gpus):
+#                     mlflow.system_metrics.log(f"gpu_{i}_memory", gpu.memoryUtil * 100)
+#                     mlflow.system_metrics.log(f"gpu_{i}_load", gpu.load * 100)
+
+#                 time.sleep(self.interval)
+
+#     # Start logging in a background thread
+#     def start_system_monitoring(self):
+#         monitoring_thread = threading.Thread(target=self.log_system_metrics, daemon=True)
+#         monitoring_thread.start()
+#         return monitoring_thread
+
+#     def __call__(self):
+#         return self.start_system_monitoring()
+
+
+
 
 
 
 if __name__=="__main__":
-
+    # see:
+    # https://github.com/akinwilson/babl/blob/main/app/models/src/babl/config.py
+    # for possible parameters  
+    # using dataclasses to store potential parameters and their defaults. 
+    
     parser = ArgumentParser(Args,formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     # Parse known arguments separately
     args, extra_args = parser.parse_known_args()
     # Convert dataclass args to dictionary
     args_dict = vars(args)
-
    # Parse additional args with argparse
-
     extra_parser = argparse.ArgumentParser()
     extra_parser.add_argument("--fast-api-title", default="T5 Question and Answering")
     extra_parser.add_argument("--experiment-description", default="Fine-tuned T5 model for question answering. Runs on GPU.")
     extra_parser.add_argument("--model-name", default=os.getenv("MODEL_NAME", "t5"))
+    extra_parser.add_argument("--publish", default=True)
     
     extra_args = extra_parser.parse_args(extra_args)
+    params = {**vars(args), **vars(extra_args)}
 
     # Combine into a single argparse.Namespace
     args = argparse.Namespace(**vars(args), **vars(extra_args))
     logger.info(f"args:\n\n{args.__dict__}\n\n")
-    ## test hyperparameters 
-    # parser.add_argument("--d-model", default=512)
-    # parser.add_argument("--d-kv", default=64)
-    # parser.add_argument("--d-ff", default=2048)
-    # parser.add_argument("--dropout-rate" ,default = 0.1)
-    # parser.add_argument("--layer-norm-epsilon", default= 1e-06)
-
 
     # KATIB_EXPERIMENT_NAME: The name of the Katib experiment.
     # KATIB_TRIAL_NAME: The name of the current trial.
@@ -229,25 +250,59 @@ if __name__=="__main__":
     signature = ModelSignature(inputs=input_schema, outputs=output_schema)
 
 
-    # setting up experiment 
+    # setting up mlflow related logic: experiment 
     experiment_name = os.getenv("KATIB_EXPERIMENT_NAME","_".join(args.fast_api_title.lower().split(" ")))
-    
     mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI","http://192.168.49.2/mlflow"))
     mlflow.set_experiment(experiment_name)
     experiment = mlflow.get_experiment_by_name(experiment_name)
+
     logger.info(f"Setup experiment: {experiment_name} ... ")
 
 
-    run_description = f"""
+    run_description = textwrap.dedent(f"""\
     # Experiment
     {args.experiment_description}
     model: {MODELS_CHOICES[os.getenv('MODEL_NAME', 't5')][0]}
     [Research paper](https://arxiv.org/abs/1910.10683).
-    """
+    """)
 
 
     with mlflow.start_run(experiment_id=experiment.experiment_id, description=run_description) as run:
         
+        # logging system metrics: default logs every 10 seconds 
+        mlflow.enable_system_metrics_logging()
+
+        # Use MLflow's dataset API (for structured tracking)
+        ds_train = "/usr/src/app/inputs/50k.jsonl"
+        ds_val = "/usr/src/app/inputs/10k.jsonl"
+        ds_test = "/usr/src/app/inputs/10k.jsonl"
+
+        def log_ds(path, regime):    
+            examples = []
+            with open(path,"r") as f:
+                x = list(f)
+                for s in x:
+                    examples.append(json.loads(s))
+                ds = pd.DataFrame(examples)
+            # this will log  the dataset as an artifact 
+            mlflow.log_table(ds, artifact_file=f"datasets/{regime}.json")
+            # this will log a description of the dataset.
+            dataset = mlflow.data.from_pandas(ds, source=path, name="question and answering with contexts")
+            mlflow.log_input(dataset, context=regime)
+
+
+        logger.info("Logging datasets to MLFlow ...")
+        log_ds(ds_train, "training")
+        log_ds(ds_val, "validating")
+        log_ds(ds_val, "testing")
+        logger.info("Finished logging datasets to MLFlow")
+
+
+
+        # log model parameters 
+        for (k,v) in params.items():
+             mlflow.log_param(k, v)
+
 
         model_name = os.getenv("MODEL_NAME", "t5")
         full_model_name = MODELS_CHOICES[model_name][0]
@@ -283,7 +338,7 @@ if __name__=="__main__":
         # overwritting the MODEL_NAME with the full version
         os.environ['MODEL_NAME'] = full_model_name
         logger.info(f"Starting fitting routine ... ")
-        fitter= Fitter(model=model, model_name=full_model_name, tokenizer=tokenizer, data_args=args)()
+        fitter= Fitter(model=model, model_name=full_model_name, tokenizer=tokenizer, data_args=args, run_id=run.info.run_id)()
         
         # os.environ['MODEL_NAME']
         # during distributed training accessing the model is further down the module tree
@@ -325,7 +380,7 @@ if __name__=="__main__":
         print("\n\n")
         
 
-        if PUBLISH:
+        if args.publish:
             docker_username = os.getenv("DOCKER_USERNAME")
             docker_password = os.getenv("DOCKER_PASSWORD")
             # need to log into the docker with given credentials 
@@ -375,14 +430,7 @@ if __name__=="__main__":
             with open(root / "Dockerfile", "w") as f:
                 f.write(dockerfile_content)
 
-            # Build and push Docker image
-            # executing these commands is dependent on where the file is called from 
-
-            # assuming:  python examples/publish.py 
-            # then the build context: ./examples
-
-            # also you will need the docker CLI tool install where ever this is is run, 
-            # and have credentials for the respective registry that the image is pushed too.
+            # Build and push serving docker image
 
             os.system(f"docker build {root} -t {image_name}")
             os.system(f"docker push {image_name}")
