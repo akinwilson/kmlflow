@@ -105,11 +105,11 @@ python examples/publish.py
 visit the [MLFlow UI](http://192.168.49.2/mlflow/#) and find your experiement. Under the `tag` section, information on how to serve the model locally is provided. 
 
 
-Run the Katib example to see how the hyperparameter optimisation process works in the context of an proposed experiment, visit it's respective [Katib UI](http://192.168.49.2/katib/). 
+
+Run the Katib example to see how the hyperparameter optimisation process works in the context of an proposed experiments, and their issued trials,  visit it's respective [Katib UI](http://192.168.49.2/katib/). 
 ```bash
 python examples/proposal.py
-``` 
-
+```
 
 
 
@@ -128,30 +128,9 @@ Stream closed EOF for argocd/argocd-server-65b974ff96-g48tx (argocd-server)
 
 
 - [ ] Fix landing page of MinIO. Currently, need to programmatically create the bucket during the deployment of the cluster. When logging into the minio service, you're supposed to be redirect to the web UI for all buckets, but a blank screen appears instead. Buckets can only be viewed via a direct URL, and created programmatically like in the `./app/deploy.sh` script. Need to configure `./app/minio/deployment.yaml` to ingress objects to correctly redirect to the land page of MiniIO after after logging into. i.e 
-`https://192.168.49.2/minio/login` should redirect correctly to `http://192.168.49.2/minio/browser` but this is currently a blank screen. Have requested for help [here](https://stackoverflow.com/questions/79441292/minio-browser-acccess-issue-login-page-appears-without-issue-and-so-do-buckets). 
+`https://192.168.49.2/minio/login` should redirect correctly to `http://192.168.49.2/minio/browser` but this is currently a blank screen.
 
-You can change the `MINIO_SERVER_URL`="http://minio-service.mlflow.svc.cluster.local:9000/" and the minio UI works, but this breaks the MLFlow clients ablitiy to communicate with the service from outside the cluster. 
-Even when defining an ingress just for the api, like `/minio-api` the `signature` error appears and boto refuses to upload to the bucket.
-
-**NOTE** In `app/deploy.sh`, did not change 
-```bash
-echo "Creating artifact bucket: mlflow-artifacts ..."
-aws --endpoint-url http://192.168.49.2 s3api create-bucket \
-    --bucket mlflow-artifacts \
-    --region eu-west-2 \
-    --no-verify-ssl || \
-    echo "Bucket mlflow-artifacts already exists"
-```
-to
-```bash
-echo "Creating artifact bucket: mlflow-artifacts ..."
-aws --endpoint-url http://192.168.49.2/minio-api s3api create-bucket \
-    --bucket mlflow-artifacts \
-    --region eu-west-2 \
-    --no-verify-ssl || \
-    echo "Bucket mlflow-artifacts already exists"
-```
-and one of the errors was, outside of the `signature` error, was that the `bucket did not exist`. 
+Rather than using a **path-based ingress** for MinIO, it needs to be change to a **host-based ingress**, such that MinIO can be served from the root / , as the application handle path-based ingresses well. 
 
 Need to fix this to make `grafana`'s UI available. Currently, the /grafana path is redirected to the minio landing page. due to the ingress rule the the minio server has 
 
