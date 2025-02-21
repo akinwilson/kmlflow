@@ -213,6 +213,8 @@ echo "Coniguring aws cli to use minIO access key and secret ... "
 aws configure set aws_access_key_id minioaccesskey
 aws configure set aws_secret_access_key miniosecretkey123
 aws configure set default.region eu-west-2
+echo ""
+echo ""
 
 echo "Creating artifact bucket: mlflow-artifacts ..."
 aws --endpoint-url http://192.168.49.2 s3api create-bucket \
@@ -220,6 +222,48 @@ aws --endpoint-url http://192.168.49.2 s3api create-bucket \
     --region eu-west-2 \
     --no-verify-ssl || \
     echo "Bucket mlflow-artifacts already exists"
+echo ""
+echo ""
+
+echo "Creating data bucket: data ..."
+aws --endpoint-url http://192.168.49.2 s3api create-bucket \
+    --bucket data \
+    --region eu-west-2 \
+    --no-verify-ssl || \
+    echo "Bucket data already exists"
+echo ""
+echo ""
+
+echo "Downloading fitting data from google drive ..."
+echo "Downloading 50k.jsonl data ..."
+gdown "https://drive.google.com/uc?id=1enHDeeAySxoNIGvSew6Y5aFxBjEVe01w" -O "50k.jsonl"
+echo "Downloading 10k.jsonl data ..."
+gdown "https://drive.google.com/uc?id=1IuywHW-sjNDfMXssOimDwvvbeMaUKstq" -O "10k.jsonl"
+echo "Finished downloading data "
+echo ""
+echo ""
+
+
+echo "Uploading fitting data to MinIO bucket: data ... "
+aws --endpoint-url http://192.168.49.2 s3api put-object \
+    --bucket data \
+    --key text2text/QA/50k.jsonl \
+    --body 50k.jsonl
+    echo ""
+    echo ""
+
+aws --endpoint-url http://192.168.49.2 s3api put-object \
+    --bucket data \
+    --key text2text/QA/10k.jsonl \
+    --body 10k.jsonl
+echo ""
+echo ""
+
+
+
+echo "Removing downloaded data arfifacts ..."
+rm 50k.jsonl 
+rm 10k.jsonl 
 echo ""
 echo ""
 
@@ -242,6 +286,7 @@ echo -e "${GREEN}https://192.168.49.2/mlflow/#${RESET}"
 
 echo "To access MinIO's user interface for the bucket:"
 echo -e "${GREEN}http://192.168.49.2/minio/browser/mlflow-artifacts${RESET}"
+echo -e "${GREEN}http://192.168.49.2/minio/browser/data${RESET}"
 echo ""
 echo ""
 
