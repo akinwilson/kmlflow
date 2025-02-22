@@ -5,9 +5,9 @@ Each service deployed to the cluster, where necessary, has its on ingress associ
 
 
 ## Development
-For local development, install the requirements 
+For local development, create a python virtual environment and install the requirements 
 ```bash
-pip install -r requirements.txt 
+pip install -r dev.requirements.txt 
 ```
 To run the server in development mode with hot-reloading, run 
 ```bash 
