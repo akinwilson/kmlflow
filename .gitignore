@@ -10,4 +10,4 @@ api_examples.json
 Dockerfile
 fit.log
 .env
-
+db.sqlite3
