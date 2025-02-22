@@ -32,28 +32,25 @@ Deploy a simulated multi-node k8s cluster alongside the platform services by run
 ```
 
 
-Check the cli output for information on how to access the UIs through a web browser. Hyperparameter experiment results are accessible from
+Check the cli output for information on how to access the UIs through a web browser. Hyperparameter experiment results are accessible from the [Katib UI](http://192.168.49.2/katib/).
+
+Along with the model registry, experiment tracking and artifact serving service component through the [MLFlow UI](http://192.168.49.2/mlflow/#).
+
+To monitor system-wide resources and services, visit the [cluster-wide dashboard UI](https://192.168.49.2/dashboard/#); you will need the access token for this; see CLI output.
+
+The object/artifact store deployed as a drop-in replacement for s3 (MinIO) can be viewed through 
+[MLFlow Artifact bucket UI](http://192.168.49.2/minio/browser/mlflow-artifacts) and [Fitting data bucket UI](http://192.168.49.2/minio/browser/data). You may be prompted to login to the artifact UIs, the credentials are 
 ```
-http://192.168.49.2/katib/
+username=minioaccesskey
+password=miniosecretkey123
 ```
-Along with the model registry and experiment tracking, and artifact serving service component through
+
+To see the continuous development platform in action find [ArgoCD's UI](http://192.168.49.2/argocd), you will be required to provide login credentials which are `username=admin` and the password can be retrieved via 
+```bash
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 ```
-http://192.168.49.2/mlflow/#
-```
-The cluster-wide dashboard from - (you will need the access token for this; see CLI output).
-```
-https://192.168.49.2/dashboard/#
-```
-The object/artifact store web UI deployed as a drop-in replacement for s3 (MinIO) can be viewed from 
-```
-http://192.168.49.2/minio/browser/mlflow-artifacts
-http://192.168.49.2/minio/browser/data
-```
-you may be prompted to login, the credentials are 
-```
-username="minioaccesskey"
-password="miniosecretkey123"
-```
+
+
 
 To destroy the cluster and therewith remove the platform, run:
 ```bash 
@@ -62,7 +59,7 @@ To destroy the cluster and therewith remove the platform, run:
 
 ## Usage 
 
-The `examples/` folder contains `python` code where experiments are set up, run and tracked, using the Katib and MLFlow SDKs clients. Particularly, the `track.py` script exemplifies the use fo the MLFlow client to track both the system and model metrics, artifacts and model parameters. `publish.py` demonstrates how to automate the process of constructing the serving image following the fitting routine of a model whilst relying on the MLFlow artifact server to construct this image. Finally, `proposal.py` presents how you can set up hyperparameter optimization experiments using the Katib SDK and tracking trials of this experiment via the MLFlow server, with the option to automate the serving image constructing following each trial. 
+The `examples/` folder contains `python` code where experiments are set up, run and tracked, using the Katib and MLFlow SDKs clients. Particularly, the `track.py` script exemplifies the use fo the MLFlow client to track both the system and model metrics, artifacts and model parameters. `publish.py` demonstrates how to automate the process of constructing the serving image following the fitting routine of a model whilst relying on the MLFlow artifact server to construct this image. Finally, `proposal.py` presents how you can set up hyperparameter optimisation experiments using the Katib SDK and tracking trials of this experiment via the MLFlow server, with the option to automate the serving image constructing following each trial. 
 
 To make use of the object artifact store provided by MinIO that replaces s3 for a local deployment of MLFlow, you need to export the following environment variables. 
 
@@ -114,7 +111,7 @@ python examples/proposal.py
 
 ## To do Feb 20 2025
 
-- [ ] Deploy [ArgoCD](https://argo-cd.readthedocs.io/en/stable/) and the [seldon core](https://docs.seldon.io/projects/seldon-core/en/latest/index.html) operator to deploy models. Seldon core allows to easily choose a variety of deployment strategies like A/B testing, single deployment, canary, blue-green or shadow deployments. With ArgoCD, a GitOps alined deployment management can be established. (fix current ArogCD issue)
+- [ ] Deploy [ArgoCD](https://argo-cd.readthedocs.io/en/stable/) and the [Seldon Core](https://docs.seldon.io/projects/seldon-core/en/latest/index.html) operator to deploy models. Seldon Core allows to easily choose a variety of deployment strategies like A/B testing, single deployment, canary, blue-green or shadow deployments. With ArgoCD, a GitOps alined deployment management can be established. (fix current ArogCD issue)
 ```bash
 time="2025-02-20T09:44:57Z" level=info msg="ArgoCD API Server is starting" built="2022-10-25T14:40:01Z" commit=b895da457791d56f01522796a8c3cd0f583d5d91 namespace=argocd port=8080 version=v2.5.0+b895da4
 time="2025-02-20T09:44:57Z" level=info msg="Starting configmap/secret informers"
@@ -123,7 +120,7 @@ time="2025-02-20T09:44:57Z" level=fatal msg="configmap \"argocd-cm\" not found"
 Stream closed EOF for argocd/argocd-server-65b974ff96-g48tx (argocd-server)
 ```
 
-- [ ] customise the mlflow server to allow for deployments via registration in the model registry UI. Given a  serving image uri, let users deploy a model using either one of the strategies; single deployment, A/B testing,  canary, blue-green or shadow deployment. This should work via the UI triggering a webhook to update to the github repository which ArgoCD is watching, providing a serving image URI to be deployed. 
+- [ ] Customise the mlflow server to allow for deployments via registrating the model registry UI. Given a  serving image uri, let users deploy a model using either one of the strategies; single deployment, A/B testing,  canary, blue-green or shadow deployment. This should work via the UI triggering a webhook to update to the github repository which ArgoCD is watching, providing a serving image URI to be deployed. 
 
 
 - [ ] Fix landing page of MinIO. Currently, need to programmatically create the bucket during the deployment of the cluster. When logging into the minio service, you're supposed to be redirect to the web UI for all buckets, but a blank screen appears instead. Buckets can only be viewed via a direct URL, and created programmatically like in the `./app/deploy.sh` script. Need to configure `./app/minio/deployment.yaml` to ingress objects to correctly redirect to the land page of MiniIO after after logging into. i.e 
