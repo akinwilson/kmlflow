@@ -190,11 +190,6 @@ echo "ArgoCD deployed successfully!"
 echo ""
 echo ""
 
-# echo "Install ArgoCD ...."
-# kubectl apply -f "$SCRIPT_DIR/argocd/deployment.yaml"
-# echo ""
-# echo ""
-
 
 # Apply the Ingress objects to expose services
 echo "Creating Ingress objects for services ..."
@@ -249,8 +244,8 @@ aws --endpoint-url http://192.168.49.2 s3api put-object \
     --bucket data \
     --key text2text/QA/50k.jsonl \
     --body 50k.jsonl
-    echo ""
-    echo ""
+echo ""
+echo ""
 
 aws --endpoint-url http://192.168.49.2 s3api put-object \
     --bucket data \

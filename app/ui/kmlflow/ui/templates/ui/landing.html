@@ -1,44 +1,124 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kmlflow UI</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        /* Basic styles for tab navigation */
-        .tabs {
-            display: flex;
-            justify-content: center;
-            margin-top: 20px;
-        }
-        .tab {
-            padding: 10px 20px;
-            margin: 0 10px;
-            background-color: #444;
+        /* Custom styles */
+        body {
+            background-color: black;
             color: white;
-            cursor: pointer;
-            border-radius: 5px;
             text-align: center;
         }
-        .tab:hover {
-            background-color: #666;
+        /* .ascii-art {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 70vh;
+            font-family: monospace;
+            white-space: pre;
+            font-size: 1.5rem;
+        } */
+
+        .ascii-art {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: monospace;
+            white-space: pre;
+            font-size: 1.5rem;
+            height: 70vh;
+            margin: 10; /* Remove default margin */
         }
-        .active {
-            background-color: #007bff;
+        .navbar {
+            background-color: #333; /* Dark background for the navbar */
+        }
+        .navbar-nav .nav-link {
+            color: white;
+            margin: 0 10px;
+        }
+        .navbar-nav .nav-link:hover {
+            color: #007bff; /* Highlight color on hover */
+        }
+        .navbar-nav .nav-link.active {
+            color: #007bff; /* Active tab color */
+            font-weight: bold;
+        }
+        .datetime {
+            /* margin-top: 20px; */
+            font-size: 1.2rem;
+            font-family: monospace;
+        }
+        .quote {
+            font-style: italic; /* Italicize the quote */
+            font-size: 1rem;
+            margin-top: 10px; /* Add some spacing above the quote */
+            font-family: monospace;
         }
     </style>
 </head>
-<body style="background-color: black; color: white; text-align: center;">
-    <pre>{{ ascii_art }}</pre>
+<body>
 
-    <!-- Tabs for navigation -->
-    <div class="tabs">
-        <div class="tab active" onclick="window.location.href='/'">Home</div>
-        <div class="tab" onclick="window.location.href='/ui'">UI</div>
-        <div class="tab" onclick="window.location.href='/service/mlflow'">MLflow</div>
-        <div class="tab" onclick="window.location.href='/service/katib'">Katib</div>
-        <div class="tab" onclick="window.location.href='/service/minio'">MinIO</div>
-        <div class="tab" onclick="window.location.href='/service/prometheus'">Prometheus</div>
-        <div class="tab" onclick="window.location.href='/service/grafana'">Grafana</div>
-        <div class="tab" onclick="window.location.href='/service/argocd'">ArgoCD</div>
+    <!-- Bootstrap Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">Kmlflow UI</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/service/mlflow">MLflow</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/service/katib">Katib</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/service/minio">MinIO</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/service/prometheus">Prometheus</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/service/grafana">Grafana</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/service/argocd">ArgoCD</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <!-- ASCII Art -->
+    <div class="ascii-art">
+        {{ ascii_art }}
     </div>
+    <div class="datetime" id="datetime"></div>
+    <div class="quote">
+        "Kmlflow is the powerhouse of the ML Engineer's workflow" - Mitochondria
+    </div>
+    <!-- Bootstrap JS (required for navbar toggler) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        function updateDateTime() {
+            const now = new Date();
+            const datetimeElement = document.getElementById('datetime');
+            datetimeElement.textContent = now.toLocaleString(); // Format: MM/DD/YYYY, HH:MM:SS AM/PM
+        }
+
+        // Update the date and time every second
+        setInterval(updateDateTime, 1000);
+
+        // Initialize the date and time immediately
+        updateDateTime();
+    </script>
 </body>
 </html>

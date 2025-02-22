@@ -1,28 +1,34 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ service_name }} UI</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        /* Styles for tabs */
-        .tabs {
-            display: flex;
-            justify-content: center;
-            margin-top: 20px;
-        }
-        .tab {
-            padding: 10px 20px;
-            margin: 0 10px;
-            background-color: #444;
+        body {
+            background-color: black;
             color: white;
-            cursor: pointer;
-            border-radius: 5px;
-            text-align: center;
         }
-        .tab:hover {
-            background-color: #666;
+        .navbar {
+            background-color: #333;
         }
-        .active {
-            background-color: #007bff;
+        .navbar-nav .nav-link {
+            color: white;
+            margin: 0 10px;
+        }
+        .navbar-nav .nav-link:hover {
+            color: #007bff;
+        }
+        .navbar-nav .nav-link.active {
+            color: #007bff;
+            font-weight: bold;
+        }
+        iframe {
+            width: 100%;
+            height: 800px;
+            border: none;
         }
     </style>
     <script>
@@ -32,17 +38,45 @@
     </script>
 </head>
 <body>
-    <nav class="tabs">
-        <div class="tab" onclick="window.location.href='/'">Home</div>
-        <div class="tab active" onclick="openService('/mlflow')">MLflow</div>
-        <div class="tab" onclick="openService('/katib')">Katib</div>
-        <div class="tab" onclick="openService('/minio')">MinIO</div>
-        <div class="tab" onclick="openService('/prometheus')">Prometheus</div>
-        <div class="tab" onclick="openService('/grafana')">Grafana</div>
-        <div class="tab" onclick="openService('/argocd')">ArgoCD</div>
+    <!-- Bootstrap Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">Kmlflow UI</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" onclick="openService('/mlflow')">MLflow</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="openService('/katib')">Katib</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="openService('/minio')">MinIO</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="openService('/prometheus')">Prometheus</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="openService('/grafana')">Grafana</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="openService('/argocd')">ArgoCD</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
     </nav>
 
     <!-- iframe to display the selected service UI -->
-    <iframe id="iframe" src="{{ service_url }}" width="100%" height="800px"></iframe>
+    <iframe id="iframe" src="{{ service_url }}"></iframe>
+
+    <!-- Bootstrap JS (required for navbar toggler) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
