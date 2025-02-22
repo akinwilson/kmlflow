@@ -4,12 +4,14 @@
 
 ## Overview 
 
-kmlflow is a experiment tracking, hyperparameter optimisation and model registry framework that allows end users to locally deploy a [Kubeflow](https://www.kubeflow.org/) component, [Katib](https://www.kubeflow.org/docs/components/katib/overview/) the [hyperparameter optimisation](https://en.wikipedia.org/wiki/Hyperparameter_optimization) and experiment tracking framework combined with [MLFlow](https://mlflow.org/), used as a model registry in this use case and [MinIO](https://min.io/) used as the object store for the MLFlow server. The tools used to achieve these backend services are [Docker](https://www.docker.com/), [Minikube](https://minikube.sigs.k8s.io/docs/) and [Kubectl](https://kubernetes.io/docs/reference/kubectl/). This repository demonstrates how to use this experiment tracking, hyperparameter optimisation and model registry framework in python code to allow for fitting and inference of models in a streamlined fashion. 
+kmlflow is a experiment tracking, hyperparameter optimisation and model registry framework that allows end users to deploy a [Katib](https://www.kubeflow.org/docs/components/katib/overview/); the [hyperparameter optimisation](https://en.wikipedia.org/wiki/Hyperparameter_optimization) and experiment tracking framework, [MLFlow](https://mlflow.org/) used as a model registry, artifact store and tracking tool complemented by [MinIO](https://min.io/) used as the object store for the MLFlow server. In addition to these services, [ArgoCD](https://argo-cd.readthedocs.io/en/stable/) and [Seldon Core](https://docs.seldon.io/projects/seldon-core/en/latest/index.html) are deployed to allow for a GitOps orientated model deployment workflow and extensive serving strategy options via each component respectively. To monitor models deployed to the cluster serving requests, [Grafana](https://grafana.com/) and [Prometheus](https://prometheus.io/docs/introduction/overview/) are deployed, where Seldon Core naturally integrates with Prometheus and Grafana allows for insight into the serving endpoints hosted through Seldon Core via Prometheus through default and custom model monitoring-specific dashboards. A [cluster-wide dashboard](https://github.com/kubernetes/dashboard) is to deployed to provide real-time observability over the entire system. 
+
+The tools used to achieve the deployment of these services as a unified platform are [Docker](https://www.docker.com/), [Minikube](https://minikube.sigs.k8s.io/docs/) and [Kubectl](https://kubernetes.io/docs/reference/kubectl/). 
+
+In addition to the infrastructure and application deployment, the `/examples` folder demonstrates how to use clients for MLFlow and Katib in order to make use of these services. 
 
 
 ## Installation
-
-
 
 Clone the repository and to ensure you have all the required CLI tools, run:
 ```bash
@@ -21,8 +23,7 @@ Create a python virtual environment and install the requirements:
 pip install -r requirements.txt
 ```
 
-
-Deploy the application to a simulated multi-node k8s cluster by then running
+Deploy a simulated multi-node k8s cluster alongside the platform services by running
 
 **WARNING**: if you have installed the `aws` cli tool, the deployment script `./app/deploy.sh` will alter your aws credentials to dummy variables used with MinIO. 
 
@@ -31,28 +32,28 @@ Deploy the application to a simulated multi-node k8s cluster by then running
 ```
 
 
-Check the cli output for information on how to access the UIs through a web browser. Hyperparameter experiment results should be accessible from
+Check the cli output for information on how to access the UIs through a web browser. Hyperparameter experiment results are accessible from
 ```
 http://192.168.49.2/katib/
 ```
-Along with the model registry component through
+Along with the model registry and experiment tracking, and artifact serving service component through
 ```
 http://192.168.49.2/mlflow/#
 ```
-And the cluster dashboard from - (you will need the access token for this; see CLI output).
+The cluster-wide dashboard from - (you will need the access token for this; see CLI output).
 ```
 https://192.168.49.2/dashboard/#
 ```
-There is also an object store web UI deployed as a drop-in replacement for s3 (MinIO), which you can view from 
+The object/artifact store web UI deployed as a drop-in replacement for s3 (MinIO) can be viewed from 
 ```
 http://192.168.49.2/minio/browser/mlflow-artifacts
+http://192.168.49.2/minio/browser/data
 ```
 you may be prompted to login, the credentials are 
 ```
 username="minioaccesskey"
 password="miniosecretkey123"
 ```
-
 
 To destroy the cluster and therewith remove the services, run:
 ```bash 
@@ -61,12 +62,11 @@ To destroy the cluster and therewith remove the services, run:
 
 ## Usage 
 
-The `examples/` folder contains `python` code where an experiment is set up, run and tracked, using the katib and mlflow SDKs clients. Running the examples will populate the user interface with experimental data. The examples demonstrate how to set up experiments for blackbox optimization problems faced in applied machine learning and how to systematically track these experiments.
+The `examples/` folder contains `python` code where experiments are set up, run and tracked, using the Katib and MLFlow SDKs clients. Particularly, the `track.py` script exemplifies the use fo the MLFlow client to track both the system and model metrics, artifacts and model parameters. `publish.py` demonstrates how to automate the process of constructing the serving image following the fitting routine of a model whilst relying on the MLFlow artifact server to construct this image. Finally, `proposal.py` presents how you can set up hyperparameter optimization experiments using the Katib SDK and tracking trials of this experiment via the MLFlow server, with the option to automate the serving image constructing following each trial. 
 
+To make use of the object artifact store provided by MinIO that replaces s3 for a local deployment of MLFlow, you need to export the following environment variables. 
 
-To make use of the object artifact store provided by MinIO that replaces s3 for a local deployment, you need to export the following environment variables 
-
-**NOTE**: if you are planning to publish the serving container to a remote registry, adjust `DOCKER_USERNAME` to your own registry account name and make sure you're logged in at the CLI level. 
+**NOTE**: Before wanting to execute `publish.py`, if you are planning to publish the serving image to a remote registry, adjust `DOCKER_USERNAME`to your own registry account name and make sure you're logged in at the CLI level. For `proposal.py`, due to the fact the serving image constructed at the end of each routine is done so from within the running container and hence, requires the underlying container to also login to the Dockerhub registry. Hence, a [personal access token](https://docs.docker.com/security/for-developers/access-tokens/) needs to be provided via `DOCKER_PASSWORD` in order to run `proposal.py`. To execute `track.py` you do not need to export the environment variables `DOCKER_PASSWORD` and `DOCKER_USERNAME`.  
 
 ```bash
 export AWS_ACCESS_KEY_ID="minioaccesskey"
@@ -76,7 +76,7 @@ export AWS_S3_FORCE_PATH_STYLE="true"
 export AWS_S3_ADDRESSING_PATH="path"
 export AWS_S3_SIGNATURE_VERSION="s3v4"
 export MINIO_DATA_BUCKET_NAME="data"
-export MLFLOW_S3_ENDPOINT_URL="http://192.168.49.2" # "http://192.168.49.2"
+export MLFLOW_S3_ENDPOINT_URL="http://192.168.49.2" 
 export MLFLOW_S3_IGNORE_TLS="true"
 export MLFLOW_TRACKING_URI="http://192.168.49.2/mlflow"
 export MLFLOW_ENABLE_SYSTEM_METRICS_LOGGING="true"
@@ -86,11 +86,10 @@ export DOCKER_USERNAME="akinolawilson"
 # only needed for proposal.py, hyper parameter searching 
 export DOCKER_PASSWORD="replace with your personal access token from dockerhub"
 ```
+**Note** `MODEL_NAME`= `{llama|t5|bloom|bert}` defined in the [babl](https://github.com/akinwilson/babl/tree/main/app/fit) library used within `proposal.py`
 
 
-**Note** `MODEL_NAME`= `{llama|t5|bloom|bert}`
-
-Then to see how the system works, run for MLFlow tracking example and visit the [MLFlow UI](http://192.168.49.2/mlflow/#). The example illustrates how artifacts, metrics, fitting routine information and other aspects of the experiment are captured and stored.  
+Then to see how the services collaborate as a platform and work individually, run for MLFlow tracking example and visit the [MLFlow UI](http://192.168.49.2/mlflow/#). The example illustrates how artifacts, model and system metrics, fitting routine information and other aspects of the experiment are captured and stored.  
 ```bash 
 python examples/track.py
 ```
@@ -102,11 +101,11 @@ To publish a serving container alongside your trained model using the MLFlow ser
 ```bash
 python examples/publish.py
 ```
-visit the [MLFlow UI](http://192.168.49.2/mlflow/#) and find your experiement. Under the `tag` section, information on how to serve the model locally is provided. 
+visit the [MLFlow UI](http://192.168.49.2/mlflow/#) and find your experiment. Under the `tag` section, information on how to serve the model locally is provided. 
 
 
 
-Run the Katib example to see how the hyperparameter optimisation process works in the context of an proposed experiments, and their issued trials,  visit it's respective [Katib UI](http://192.168.49.2/katib/). 
+Run the following example to see how the hyperparameter optimisation process works in the context of a proposed experiment, and their encompassing trials. to see results and process unfolding, see the [Katib UI](http://192.168.49.2/katib/). 
 ```bash
 python examples/proposal.py
 ```
