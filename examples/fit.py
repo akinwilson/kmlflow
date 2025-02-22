@@ -32,10 +32,6 @@ from babl.config import Args
 import argparse
 import textwrap
 import threading
-# import GPUtil # gather system metrics gpu and vram 
-# import psutil # ``       ``     ``    cpu  and ram
-
-
 
 root = Path(__file__).parent 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -182,17 +178,6 @@ if __name__=="__main__":
     args = argparse.Namespace(**vars(args), **vars(extra_args))
     logger.info(f"args:\n\n{args.__dict__}\n\n")
 
-    # KATIB_EXPERIMENT_NAME: The name of the Katib experiment.
-    # KATIB_TRIAL_NAME: The name of the current trial.
-    # KATIB_TRIAL_UNIQUE_NAME: 
-
-    # model_name = "t5-small" # needed for image registry name
-    # title = "T5 Question and Answering" # fastapi title 
-    # artifact_path = "t5_qa_model" # mlflow artifact path for experiment 
-    # mlflow_track_uri = 'http://192.168.49.2/mlflow' # remote tracking uri 
-    # experiment_description = "Fine-tuned T5 model for question answering. Runs on GPU."
-
-
 
     # this needs to be set for the FastAPI swagger UI to have an example input and expect output
     # what inputs will your model expect? and what will the outputs be? Set this during fitting
@@ -233,7 +218,7 @@ if __name__=="__main__":
         # logging system metrics: default logs every 10 seconds 
         mlflow.enable_system_metrics_logging()
 
-        # Use MLflow's dataset API (for structured tracking)
+        # Use MLflow's dataset API for dataset tracking and over-arching information 
         ds_train = "/usr/src/app/inputs/50k.jsonl"
         ds_val = "/usr/src/app/inputs/10k.jsonl"
         ds_test = "/usr/src/app/inputs/10k.jsonl"
@@ -258,9 +243,7 @@ if __name__=="__main__":
         log_ds(ds_val, "testing")
         logger.info("Finished logging datasets to MLFlow")
 
-
-
-        # log model parameters 
+        # log model input parameters 
         for (k,v) in params.items():
              mlflow.log_param(k, v)
 
@@ -272,7 +255,7 @@ if __name__=="__main__":
         m = t_w_m["model"]
 
         tokenizer = t.from_pretrained(full_model_name)
-        # need to parameterised the model config selection 
+        # need to parameterised the model config selection T5Config
         model = m.from_pretrained(full_model_name, **T5Config(d_model=args.d_model,
                                                               d_kv=args.d_kv,
                                                               d_ff=args.d_ff,
@@ -280,7 +263,7 @@ if __name__=="__main__":
                                                               layer_norm_epsilon=args.layer_norm_epsilon).__dict__)
 
 
-        # for ease of use with downstream with FastAPI
+        # For serving purposed used by the MLFlow server to construct serving image using FastAPI framework
         class QuestionAnsweringModel(mlflow.pyfunc.PythonModel):
             def load_context(self, context):
                 self.tokenizer = tokenizer.from_pretrained(context.artifacts["tokenizer"])
@@ -299,19 +282,18 @@ if __name__=="__main__":
         # overwritting the MODEL_NAME with the full version
         os.environ['MODEL_NAME'] = full_model_name
         logger.info(f"Starting fitting routine ... ")
-        fitter= Fitter(model=model, model_name=full_model_name, tokenizer=tokenizer, data_args=args, run_id=run.info.run_id)()
+        fitted= Fitter(model=model, model_name=full_model_name, tokenizer=tokenizer, data_args=args, run_id=run.info.run_id)()
         
-        # os.environ['MODEL_NAME']
+
         # during distributed training accessing the model is further down the module tree
         if torch.cuda.is_available() and torch.cuda.device_count() == 1:
-            model = fitter.trainer.model.model
-            # fitter.trainer.model
-            tokenizer = fitter.data_module.tokenizer
+            model = fitted.trainer.model.model
+            tokenizer = fitted.data_module.tokenizer
 
 
+        # saving artifacts locally and then using log_model function to push to object store
         tokenizer.save_pretrained("tokenizer")
         model.save_pretrained("model")
-
         artifacts = { "model": "model",
                       "last.ckpt":"last.ckpt", 
                       "tokenizer":"tokenizer"}
@@ -390,19 +372,26 @@ if __name__=="__main__":
 
             with open(root / "Dockerfile", "w") as f:
                 f.write(dockerfile_content)
-
+            logger.info(f"Starting subprocess of building serving image {image_name}...")
             # Build and push serving docker image
-
-            os.system(f"docker build {root} -t {image_name}")
-            os.system(f"docker push {image_name}")
+            subprocess.run(f"docker build {root} -t {image_name}", shell=True, check=True)
+            logger.info(f"Finished subprocess of building serving image {image_name}")
+            logger.info(f"Starting subprocess to push serving image {image_name} to remote repository...")
+            subprocess.run(f"docker push {image_name}", shell=True, check=True)
+            logger.info(f"Finished subprocess to push serving image {image_name} to remote repository")
+            # os.system(f"docker build {root} -t {image_name}")
+            # os.system(f"docker push {image_name}")
 
             # clean up 
-            os.remove(root / "Dockerfile")
-            os.remove(root / "api_examples.json")
-            os.remove(root / "api_env")
+            logger.info(f"Cleaning up serving image construction artifacts ... ")
+            subprocess.run(f"{root/ 'Dockerfile'}", shell=True, check=True)
+            subprocess.run(f"{root/ 'api_examples.json'}", shell=True, check=True)
+            subprocess.run(f"{root/ 'api_env'}", shell=True, check=True)
+            logger.info(f"Finished cleaning up serving image construction artifacts ...")
+
             # complete script and exit with no errors
-            sys.exit(0)
+            exit(0)
         # complete script and exit with no errors
-        sys.exit(0)
+        exit(0)
 
 

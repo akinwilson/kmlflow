@@ -13,7 +13,7 @@
 
 ## Building HPO container 
 
-You do not need to do this to run the script initially, as `akinolawilson/pytorch-train-gpu:latest` already exists in a remote registry. But if you would like to build the image locally to customize it, ensure you have exported the relevant environment variables, and then with the following command, you can build the fitting container used by Katib to perform hyperparameter optimisation. Run the following command from within the in folder, the `/examples` folder 
+You do not need to do this to run the script initially, as `akinolawilson/pytorch-train-gpu:latest` already exists in a remote registry. But if you would like to build the image locally to customize it, ensure you have exported the relevant environment variables, and then with the following command, you can build the fitting container used by Katib to perform hyperparameter optimisation. Run the following command from within the this folder, the `/examples` folder 
 ```bash
 docker build --network=host \
             --build-arg AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
@@ -34,7 +34,7 @@ docker run --rm -it --name katib-test \
             --network host \
             akinolawilson/pytorch-train-gpu:latest /bin/bash
 ```
-export the relevant environment variables inside the running `katib-test` container 
+Export the relevant environment variables inside the running `katib-test` container 
 ```bash
 export AWS_ACCESS_KEY_ID="minioaccesskey"
 export AWS_SECRET_ACCESS_KEY="miniosecretkey123"

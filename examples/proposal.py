@@ -94,7 +94,7 @@ trial_spec = {
                     {
                         "name": "training-container",
                         "image": "akinolawilson/pytorch-train-gpu:latest",
-                        
+                        "imagePullPolicy": "Always",  # Ensure the image is always pulled
                         "command": ["python3", "/usr/src/app/fit.py"],
                         "args": ["--fast-api-title", "'T5 Question and Answering'",
                                 "--d-model","512",

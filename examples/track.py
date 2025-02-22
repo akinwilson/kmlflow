@@ -148,6 +148,7 @@ if __name__ == "__main__":
 
 
     with mlflow.start_run() as run:
+        mlflow.enable_system_metrics_logging()
         params = {
             "epochs": args.epochs,
             "learning_rate": args.learning_rate,
