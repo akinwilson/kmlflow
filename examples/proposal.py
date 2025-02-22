@@ -20,7 +20,7 @@ from kubeflow.katib import V1beta1TrialParameterSpec as TrialParameterSpec
 
 # Experiment name and namespace.
 namespace = "kubeflow"
-experiment_name = "t5-bay-opt-v5"
+experiment_name = "t5-bay-opt-v6"
 
 
 metadata = ObjectMeta(
@@ -212,6 +212,8 @@ trial_template=TrialTemplate(
     ],
     trial_spec=trial_spec
 )
+
+
 
 # Experiment object.
 experiment = Experiment(

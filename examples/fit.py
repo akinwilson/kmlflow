@@ -379,14 +379,12 @@ if __name__=="__main__":
             logger.info(f"Starting subprocess to push serving image {image_name} to remote repository...")
             subprocess.run(f"docker push {image_name}", shell=True, check=True)
             logger.info(f"Finished subprocess to push serving image {image_name} to remote repository")
-            # os.system(f"docker build {root} -t {image_name}")
-            # os.system(f"docker push {image_name}")
 
             # clean up 
             logger.info(f"Cleaning up serving image construction artifacts ... ")
-            subprocess.run(f"{root/ 'Dockerfile'}", shell=True, check=True)
-            subprocess.run(f"{root/ 'api_examples.json'}", shell=True, check=True)
-            subprocess.run(f"{root/ 'api_env'}", shell=True, check=True)
+            subprocess.run(f"rm {root / 'Dockerfile'}", shell=True, check=True)
+            subprocess.run(f"rm {root / 'api_examples.json'}", shell=True, check=True)
+            subprocess.run(f"rm {root / 'api_env'}", shell=True, check=True)
             logger.info(f"Finished cleaning up serving image construction artifacts ...")
 
             # complete script and exit with no errors
