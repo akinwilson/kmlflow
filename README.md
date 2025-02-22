@@ -25,7 +25,7 @@ pip install -r requirements.txt
 
 Deploy a simulated multi-node k8s cluster alongside the platform services by running
 
-**WARNING**: if you have installed the `aws` cli tool, the deployment script `./app/deploy.sh` will alter your aws credentials to dummy variables used with MinIO. 
+**WARNING**: if you have installed the `aws` cli tool, the platform deployment script `./app/deploy.sh` will alter your aws credentials to dummy variables used with MinIO. 
 
 ```bash 
 ./app/deploy.sh
@@ -55,7 +55,7 @@ username="minioaccesskey"
 password="miniosecretkey123"
 ```
 
-To destroy the cluster and therewith remove the services, run:
+To destroy the cluster and therewith remove the platform, run:
 ```bash 
 ./app/remove.sh
 ```
