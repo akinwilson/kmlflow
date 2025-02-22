@@ -54,11 +54,14 @@
     </style>
     
     <script>
-        function openService(event, service) {
+        function openService(event, service, linkElement) {
             event.preventDefault();
             document.getElementById('iframe').src = service;
             document.getElementById('iframe').style.display = "block";
             document.getElementById('initial-content').style.display = "none";
+
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active') );
+            linkElement.classList.add('active');
         }
 
         function updateDateTime() {
@@ -84,25 +87,25 @@
                         <a class="nav-link active" href="/kmlflow">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="openService(event, '/mlflow/#')">MLflow</a>
+                        <a class="nav-link" href="#" onclick="openService(event, '/mlflow/#', this)">MLflow</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="openService(event, '/katib/')">Katib</a>
+                        <a class="nav-link" href="#" onclick="openService(event, '/katib/', this )">Katib</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="openService(event, '/dashboard/#/login')">Dashboard</a>
+                        <a class="nav-link" href="#" onclick="openService(event, '/dashboard/#/login', this)">Dashboard</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="openService(event, '/minio')">MinIO</a>
+                        <a class="nav-link" href="#" onclick="openService(event, '/minio', this)">MinIO</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="openService(event, '/prometheus')">Prometheus</a>
+                        <a class="nav-link" href="#" onclick="openService(event, '/prometheus', this)">Prometheus</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="openService(event, '/grafana')">Grafana</a>
+                        <a class="nav-link" href="#" onclick="openService(event, '/grafana', this)">Grafana</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="openService(event, '/argocd')">ArgoCD</a>
+                        <a class="nav-link" href="#" onclick="openService(event, '/argocd', this)">ArgoCD</a>
                     </li>
                 </ul>
             </div>
