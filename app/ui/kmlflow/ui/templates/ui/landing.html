@@ -7,22 +7,11 @@
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        /* Custom styles */
         body {
             background-color: black;
             color: white;
             text-align: center;
         }
-        /* .ascii-art {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 70vh;
-            font-family: monospace;
-            white-space: pre;
-            font-size: 1.5rem;
-        } */
-
         .ascii-art {
             display: flex;
             justify-content: center;
@@ -31,94 +20,111 @@
             white-space: pre;
             font-size: 1.5rem;
             height: 70vh;
-            margin: 10; /* Remove default margin */
         }
         .navbar {
-            background-color: #333; /* Dark background for the navbar */
+            background-color: #333;
         }
         .navbar-nav .nav-link {
             color: white;
             margin: 0 10px;
         }
         .navbar-nav .nav-link:hover {
-            color: #007bff; /* Highlight color on hover */
+            color: #007bff;
         }
         .navbar-nav .nav-link.active {
-            color: #007bff; /* Active tab color */
+            color: #007bff;
             font-weight: bold;
         }
         .datetime {
-            /* margin-top: 20px; */
             font-size: 1.2rem;
             font-family: monospace;
         }
         .quote {
-            font-style: italic; /* Italicize the quote */
+            font-style: italic;
             font-size: 1rem;
-            margin-top: 10px; /* Add some spacing above the quote */
+            margin-top: 10px;
             font-family: monospace;
         }
+        iframe {
+            width: 100%;
+            height: 1290px;
+            border: none;
+            display: none; /* Initially hidden */
+        }
     </style>
+    
+    <script>
+        function openService(event, service) {
+            event.preventDefault();
+            document.getElementById('iframe').src = service;
+            document.getElementById('iframe').style.display = "block";
+            document.getElementById('initial-content').style.display = "none";
+        }
+
+        function updateDateTime() {
+            const now = new Date();
+            document.getElementById('datetime').textContent = now.toLocaleString();
+        }
+        setInterval(updateDateTime, 1000);
+        updateDateTime();
+    </script>
 </head>
 <body>
 
     <!-- Bootstrap Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid">
-            <a class="navbar-brand" href="/">Kmlflow UI</a>
+            <a class="navbar-brand" href="/kmlflow">Kmlflow UI</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link active" href="/">Home</a>
+                        <a class="nav-link active" href="/kmlflow">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/service/mlflow">MLflow</a>
+                        <a class="nav-link" href="#" onclick="openService(event, '/mlflow/#')">MLflow</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/service/katib">Katib</a>
+                        <a class="nav-link" href="#" onclick="openService(event, '/katib/')">Katib</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/service/minio">MinIO</a>
+                        <a class="nav-link" href="#" onclick="openService(event, '/dashboard/#/login')">Dashboard</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/service/prometheus">Prometheus</a>
+                        <a class="nav-link" href="#" onclick="openService(event, '/minio')">MinIO</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/service/grafana">Grafana</a>
+                        <a class="nav-link" href="#" onclick="openService(event, '/prometheus')">Prometheus</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/service/argocd">ArgoCD</a>
+                        <a class="nav-link" href="#" onclick="openService(event, '/grafana')">Grafana</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="openService(event, '/argocd')">ArgoCD</a>
                     </li>
                 </ul>
             </div>
         </div>
     </nav>
-    <!-- ASCII Art -->
-    <div class="ascii-art">
-        {{ ascii_art }}
+
+    <!-- Initial Content (ASCII Art, Date/Time, Quote) -->
+    <div id="initial-content">
+        <div class="ascii-art">
+            {{ ascii_art }}
+        </div>
+        <div class="datetime" id="datetime"></div>
+        <div class="quote">
+            "Kmlflow is the powerhouse of the ML Engineer's workflow" - Mitochondria
+        </div>
     </div>
-    <div class="datetime" id="datetime"></div>
-    <div class="quote">
-        "Kmlflow is the powerhouse of the ML Engineer's workflow" - Mitochondria
-    </div>
-    <!-- Bootstrap JS (required for navbar toggler) -->
+
+    <!-- iframe to load service UIs -->
+    <iframe id="iframe"></iframe>
+
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <script>
-        function updateDateTime() {
-            const now = new Date();
-            const datetimeElement = document.getElementById('datetime');
-            datetimeElement.textContent = now.toLocaleString(); // Format: MM/DD/YYYY, HH:MM:SS AM/PM
-        }
-
-        // Update the date and time every second
-        setInterval(updateDateTime, 1000);
-
-        // Initialize the date and time immediately
-        updateDateTime();
-    </script>
 </body>
 </html>
