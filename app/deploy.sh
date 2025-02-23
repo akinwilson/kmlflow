@@ -104,12 +104,17 @@ kubectl apply -k "github.com/kubeflow/katib.git/manifests/v1beta1/installs/katib
 echo ""
 
 
-echo "Rolling out persistent volume and persistent volume claim for Katib to use as backend storage ..."
+echo "Deploying ingress for Katib UI ..."
+kubectl apply -f "$SCRIPT_DIR/katib/ingress.yaml"
+echo ""
+
+echo "Rolling out PVs and PVCs for Katib and MLFlow ..."
 kubectl apply -f "$SCRIPT_DIR/katib/pv.yaml"
 echo ""
 
 echo "Rolling out cluster dashboard application ..."
-kubectl apply -f "$SCRIPT_DIR/katib/dashboard.yaml"
+kubectl apply -f "$SCRIPT_DIR/dashboard/deployment.yaml"
+kubectl apply -f "$SCRIPT_DIR/dashboard/ingress.yaml"
 echo ""
 
 echo "Creating Service Account ..."
@@ -127,6 +132,8 @@ kubectl apply -f "$SCRIPT_DIR/mlflow/namespace.yaml"
 kubectl get namespaces | grep mlflow 
 kubectl apply -f "$SCRIPT_DIR/mlflow/deployment.yaml"
 kubectl apply -f "$SCRIPT_DIR/mlflow/service.yaml"
+kubectl apply -f "$SCRIPT_DIR/mlflow/ingress.yaml"
+
 
 
 echo "Installing MinIO..."
@@ -168,7 +175,9 @@ echo ""
 echo "Installing ArgoCD ..."
 
 kubectl apply -f "$SCRIPT_DIR/argocd/ns.yaml"
-kubectl apply -f "$SCRIPT_DIR/argocd/cm.yaml"
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply -f "$SCRIPT_DIR/argocd/ingress.yaml"
+# kubectl apply -f "$SCRIPT_DIR/argocd/cm.yaml"
 
 # Set a counter for retries and maximum number of attempts
 MAX_RETRIES=10
@@ -193,7 +202,6 @@ echo ""
 
 # Apply the Ingress objects to expose services
 echo "Creating Ingress objects for services ..."
-kubectl apply -f "$SCRIPT_DIR/ingress/dashboard-ingress.yaml"
 kubectl apply -f "$SCRIPT_DIR/ingress/katib-ingress.yaml"
 kubectl apply -f "$SCRIPT_DIR/ingress/mlflow-ingress.yaml"
 echo "Ingress objects created successfully."
@@ -269,6 +277,10 @@ echo ""
 
 
 # Print the Ingress URLs for the services with color formatting
+
+echo "To view unified kmlflow dashboard:"
+echo -e "${GREEN}https://192.168.49.2/kmlflow${RESET}"
+
 echo "To view the K8s cluster health head to:"
 echo -e "${GREEN}https://192.168.49.2/dashboard/#${RESET}"
 
