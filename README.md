@@ -31,8 +31,9 @@ Deploy a simulated multi-node k8s cluster alongside the platform services by run
 ./app/deploy.sh
 ```
 
+To access platform through a unified interface to all platform services, please see the [Kmlflow UI](http://192.168.49.2/kmlflow).
 
-Check the cli output for information on how to access the UIs through a web browser. Hyperparameter experiment results are accessible from the [Katib UI](http://192.168.49.2/katib/).
+Check the cli output for information on how to access the individual UIs through a web browser. Hyperparameter experiment results are accessible from the [Katib UI](http://192.168.49.2/katib/).
 
 Along with the model registry, experiment tracking and artifact serving service component through the [MLFlow UI](http://192.168.49.2/mlflow/#).
 
