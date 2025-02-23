@@ -56,13 +56,85 @@
     <script>
         function openService(event, service, linkElement) {
             event.preventDefault();
-            document.getElementById('iframe').src = service;
-            document.getElementById('iframe').style.display = "block";
+            const iframe = document.getElementById('iframe');
+            iframe.src = service;
+            iframe.style.display = "block"; 
+            // document.getElementById('iframe').src = service;
+            // document.getElementById('iframe').style.display = "block";
             document.getElementById('initial-content').style.display = "none";
+            localStorage.setItem('selectedService', service); 
 
             document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active') );
             linkElement.classList.add('active');
         }
+
+        // function goToHome(event, linkElement) {
+        //     event.preventDefault();
+            
+        //     // Clear the stored iframe service
+        //     localStorage.removeItem('selectedService');
+
+        //     // Hide iframe and show initial content
+        //     const iframe = document.getElementById('iframe');
+        //     const initialContent = document.getElementById('initial-content');
+            
+        //     iframe.style.display = "none";
+        //     iframe.src = ""; // Clear iframe source
+        //     initialContent.style.display = "block";
+
+        //     // Remove active class from all nav links
+        //     document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            
+        //     // Set "Home" as the active link
+        //     linkElement.classList.add('active');
+        // }
+
+        function goToHome(event, homeLink) {
+            event.preventDefault();
+            
+            // Clear stored iframe service
+            localStorage.removeItem('selectedService');
+
+            // Hide iframe and show initial content
+            const iframe = document.getElementById('iframe');
+            const initialContent = document.getElementById('initial-content');
+            
+            iframe.style.display = "none";
+            iframe.src = ""; // Clear iframe source
+            initialContent.style.display = "block";
+
+            // Remove active class from all nav links
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+
+            // Ensure only the "Home" link is active
+            if (homeLink) {
+                homeLink.classList.add('active');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const savedService = localStorage.getItem('selectedService');
+            const iframe = document.getElementById('iframe');
+            const initialContent = document.getElementById('initial-content');
+
+            if (savedService) {
+                iframe.src = savedService;
+                iframe.style.display = "block";
+                initialContent.style.display = "none";
+
+                // Update the active link styling
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    if (link.getAttribute('onclick')?.includes(savedService)) {
+                        link.classList.add('active');
+                    } else {
+                        link.classList.remove('active');
+                    }
+                });
+            } else {
+                iframe.style.display = "none";
+                initialContent.style.display = "block";
+            }
+        });
 
         function updateDateTime() {
             const now = new Date();
@@ -114,14 +186,16 @@
     <!-- Bootstrap Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid">
-            <a class="navbar-brand" href="/kmlflow">Kmlflow UI</a>
+            <a class="navbar-brand" href="#" onclick="goToHome(event, this)">Kmlflow UI</a>
+            <!-- <a class="navbar-brand" href="#" onclick="goToHome(event, document.querySelector('.nav-link[href=\"#\"]'))">Kmlflow UI</a> -->
+
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link active" href="/kmlflow">Home</a>
+                        <a class="nav-link active" href="#" onclick="goToHome(event, this)">Home</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#" onclick="openService(event, '/mlflow/#', this)">MLflow</a>
