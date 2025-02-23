@@ -114,7 +114,6 @@ echo ""
 
 echo "Rolling out cluster dashboard application ..."
 kubectl apply -f "$SCRIPT_DIR/dashboard/deployment.yaml"
-kubectl apply -f "$SCRIPT_DIR/dashboard/ingress.yaml"
 echo ""
 
 echo "Creating Service Account ..."
