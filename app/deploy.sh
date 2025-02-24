@@ -174,39 +174,12 @@ echo ""
 echo "Installing ArgoCD ..."
 
 kubectl apply -f "$SCRIPT_DIR/argocd/ns.yaml"
+kubectl apply -f "$SCRIPT_DIR/argocd/secrets.yaml"
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 kubectl apply -f "$SCRIPT_DIR/argocd/ingress.yaml"
-# kubectl apply -f "$SCRIPT_DIR/argocd/cm.yaml"
-
-# Set a counter for retries and maximum number of attempts
-MAX_RETRIES=10
-RETRY_DELAY=10  # seconds
-RETRY_COUNT=0
-
-# Retry loop
-while ! kubectl apply -f "$SCRIPT_DIR/argocd/deployment.yaml"; do
-  RETRY_COUNT=$((RETRY_COUNT+1))
-  if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
-    echo "Deployment failed after $MAX_RETRIES attempts. Exiting."
-    exit 1
-  fi
-  echo "Deployment failed. Retrying in $RETRY_DELAY seconds..."
-  sleep $RETRY_DELAY
-done
-
-echo "ArgoCD deployed successfully!"
+kubectl apply -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 echo ""
 echo ""
-
-
-# Apply the Ingress objects to expose services
-echo "Creating Ingress objects for services ..."
-kubectl apply -f "$SCRIPT_DIR/ingress/katib-ingress.yaml"
-kubectl apply -f "$SCRIPT_DIR/ingress/mlflow-ingress.yaml"
-echo "Ingress objects created successfully."
-echo ""
-echo ""
-
 
 
 
@@ -268,7 +241,7 @@ sudo sysctl -p
 echo ""
 echo ""
 
-echo "Removing downloaded data arfifacts ..."
+echo "Removing downloaded data artifacts ..."
 rm 50k.jsonl 
 rm 10k.jsonl 
 echo ""
