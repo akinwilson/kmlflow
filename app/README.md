@@ -100,3 +100,10 @@ Run latest built docker image on host network
 ```bash
 docker run --network host --rm $(docker images | head -n 2 | awk 'FNR == 2 {print $1":"$2}')
 ```
+
+## YAML in-line processing 
+```bash 
+curl -s https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml | \
+yq eval '(select(.kind == "Deployment" and .metadata.name == "argocd-server").spec.template.spec.containers[0].args) += ["--rootpath=/argo"]' - | \
+kubectl apply -f -
+```

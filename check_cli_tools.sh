@@ -75,6 +75,14 @@ if [-z "$(command -v mc)" ]; then
   echo "You do not necessary need it, but it allows you to communicate with your MinIO server through the CLI"
 fi 
 
+# check yaml processor is install  
+if [-z "$(command -v yq)" ]; then 
+  echo "Unable to find YAML inline processor"
+  echo "To install the yq, please follow this guide: ${GREEN}https://github.com/mikefarah/yq${RESET}"
+  exit 1 
+fi 
+
+
 # check if minikube exists
 if [ -z "$(command -v minikube)" ]; then
   echo "Unable to find Minikube"
