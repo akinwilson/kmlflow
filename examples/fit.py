@@ -300,14 +300,12 @@ if __name__=="__main__":
 
         # set tags inside the run context
         mlflow.set_tag("model_name", model_name)
-        mlflow.set_tag("katib_trial_unique_label", os.getenv("KATIB_TRIAL_UNIQUE_LABEL", ""))
         mlflow.set_tag("katib_trial_name", os.getenv("KATIB_TRIAL_NAME", ""))
                 
         
         logger.info(f"Run ID: {run_id}")
         logger.info(f"Experiment ID: {experiment_id}")
         logger.info(f"Artifact URI: {model_uri}")
-        logger.info(f'Katib ID: {os.getenv("KATIB_TRIAL_UNIQUE_LABEL", "")}')
         logger.info(f'Katib Trial Name: {os.getenv("KATIB_TRIAL_NAME", "")}')
         
         if args.publish:
@@ -375,10 +373,10 @@ if __name__=="__main__":
             subprocess.run(f"rm {root / 'api_env'}", shell=True, check=True,stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             logger.info(f"Finished cleaning up serving image construction artifacts")
 
-            logger.info(f"Finished!")
+            logger.info("Finished! - setting MLFlow status run to FINISHED")
             mlflow.end_run(status="FINISHED")  
             sys.exit(0) 
-        logger.info(f"Finished!")
+        logger.info(f"Finished! - setting MLFlow status run to FINISHED")
         mlflow.end_run(status="FINISHED")  
         sys.exit(0) 
 

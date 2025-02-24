@@ -21,12 +21,11 @@ from kubeflow.katib import V1beta1TrialParameterSpec as TrialParameterSpec
 
 from kubeflow.katib import V1beta1MetricsCollectorSpec as MetricsCollectorSpec
 from kubeflow.katib import V1beta1CollectorSpec as CollectorSpec
-from kubeflow.katib import V1beta1SourceSpec as SourceSpec
 
-# Define the push-based metrics collector
-metrics_collector_spec = MetricsCollectorSpec(
-    collector=CollectorSpec(kind="Push"),
-)
+
+
+hpo_optimisation_aglo = 'bayesianoptimization'
+
 
 
 # Experiment name and namespace.
@@ -73,6 +72,7 @@ class Grid:
     random_state: int = field(default=42, metadata={"help": "Random seed"})
 
 
+
 @dataclass
 class TreeOfParzenEstimators:
     random_state: int = field(default=42, metadata={"help": "Random seed"})
@@ -84,30 +84,15 @@ class TreeOfParzenEstimators:
 
 @dataclass
 class Hyperband:
+    '''
+     Instead of using Bayesian optimization to select configurations, 
+     Hyperband focuses on early stopping as a strategy for optimizing
+     resource allocation and thus for maximizing the number of configurations that it can evaluate.
+    Hyperband also focuses on the speed of the search
+    '''
     random_state: int = field(default=42, metadata={"help": "Random seed"})
     eta : int =  field(default=3, metadata={"help":"Reduction factor for early stopping"})
 
-
-# @dataclass
-# class PopulationBasedTraining:
-#     random_state : int = field(default=42, metadata={"help": "Random seed"})
-#     n_population : int = field(default=10, metadata={"help": "Number of models in the population"})
-#     resample_probability : float = field(default=0.2, metadata={"help": "Probability of resampling"})
-#     truncation_threshold : List[int] = field(default_factory= lambda x : [1.2, 0.8], metadata={"help": "Perturbation factors"})
-
-
-@dataclass
-class SimulatedAnnealing:
-    random_state: int = field(default=42, metadata={"help": "Random seed"})
-    initial_temperature : int = field(default=1000, metadata={"help": "Initial temperature"}) 
-    cooling_rate : float = field(default=0.95, metadata={"help": "Cooling rate"})
-
-
-@dataclass
-class DifferentialEvolution:
-    random_state: int = field(default=42, metadata={"help": "Random seed"})
-    strategy : str = field(default='best1bin', metadata={"help":"Mutation strategy"}) 
-    popsize :  int = field(default=10, metadata={"help":"Population size"})
 
 @dataclass
 class CovarianceMatrixAdaptationEvolutionStrategy:
@@ -115,10 +100,34 @@ class CovarianceMatrixAdaptationEvolutionStrategy:
     sigma : float = field(default=0.5,  metadata={"help": "Initial standard deviation"})
 
 
+hpo_algo_cfgs = {"bayesianoptimization":BayesianOptimization,
+                "grid": Grid, 
+                "random": Random,
+                "tpe": TreeOfParzenEstimators,
+                "cmaes":CovarianceMatrixAdaptationEvolutionStrategy,
+                "hyperband":Hyperband}
+
+
+
+# @dataclass
+# class SimulatedAnnealing:
+#     random_state: int = field(default=42, metadata={"help": "Random seed"})
+#     initial_temperature : int = field(default=1000, metadata={"help": "Initial temperature"}) 
+#     cooling_rate : float = field(default=0.95, metadata={"help": "Cooling rate"})
+
+
+# @dataclass
+# class DifferentialEvolution:
+#     random_state: int = field(default=42, metadata={"help": "Random seed"})
+#     strategy : str = field(default='best1bin', metadata={"help":"Mutation strategy"}) 
+#     popsize :  int = field(default=10, metadata={"help":"Population size"})
+
+
+
 
 algorithm_spec= AlgorithmSpec(
-    algorithm_name="bayesianoptimization",
-    algorithm_settings= [{"name": k, "value": str(v)} for (k,v) in BayesianOptimization().__dict__.items()]
+    algorithm_name=hpo_optimisation_aglo,
+    algorithm_settings= [{"name": k, "value": str(v)} for (k,v) in hpo_algo_cfgs[hpo_optimisation_aglo]().__dict__.items()]
 )
 
 
@@ -152,7 +161,6 @@ parameters=[
 
 # python3 /usr/src/app/fit.py --fast-api-title "'T5 Question and Answering'" --d-model 512 --d-kv 64 --d-ff 2048
 
-# JSON template specification for the Trial's Worker Kubernetes Job.
 trial_spec = {
     "apiVersion": "batch/v1",
     "kind": "Job",
@@ -164,8 +172,8 @@ trial_spec = {
                 }
             },
             "spec": {
-                "hostNetwork": True,
-                "dnsPolicy": "ClusterFirstWithHostNet",
+                "hostNetwork": True, # need to allow mlflow client to access server
+                "dnsPolicy": "ClusterFirstWithHostNet", # needed for push-based metric collection
                 "containers": [
                     {
                         "name": "training-container",
@@ -291,6 +299,10 @@ trial_template=TrialTemplate(
 )
 
 
+# Define the push-based metrics collector
+metrics_collector_spec = MetricsCollectorSpec(
+    collector=CollectorSpec(kind="Push"),
+)
 
 # Experiment object.
 experiment = Experiment(
