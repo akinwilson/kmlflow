@@ -50,8 +50,7 @@ To see the continuous development platform in action find [ArgoCD's UI](http://1
 ```bash
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 ```
-
-
+**Note** when logging into the ArgoCD UI through the centralised [Kmlflow UI](https://192.168.49.2/kmlflow), you may need to refresh the page in order for the ArgoCD UI to appear after logging in. 
 
 To destroy the cluster and therewith remove the platform, run:
 ```bash 
@@ -138,17 +137,11 @@ usage: fit.py [-h] [--vocab-size VOCAB_SIZE] [--d-model D_MODEL] [--d-kv D_KV]
 
 ## To do Feb 20 2025
 
-- [ ] Deploy [ArgoCD](https://argo-cd.readthedocs.io/en/stable/) and the [Seldon Core](https://docs.seldon.io/projects/seldon-core/en/latest/index.html) operator to deploy models. Seldon Core allows to easily choose a variety of deployment strategies like A/B testing, single deployment, canary, blue-green or shadow deployments. With ArgoCD, a GitOps alined deployment management can be established. (fix current ArogCD issue)
-```bash
-time="2025-02-20T09:44:57Z" level=info msg="ArgoCD API Server is starting" built="2022-10-25T14:40:01Z" commit=b895da457791d56f01522796a8c3cd0f583d5d91 namespace=argocd port=8080 version=v2.5.0+b895da4
-time="2025-02-20T09:44:57Z" level=info msg="Starting configmap/secret informers"
-time="2025-02-20T09:44:57Z" level=info msg="Configmap/secret informer synced"
-time="2025-02-20T09:44:57Z" level=fatal msg="configmap \"argocd-cm\" not found"
-Stream closed EOF for argocd/argocd-server-65b974ff96-g48tx (argocd-server)
-```
 
-- [ ] Customise the mlflow server to allow for deployments via registrating the model registry UI. Given a  serving image uri, let users deploy a model using either one of the strategies; single deployment, A/B testing,  canary, blue-green or shadow deployment. This should work via the UI triggering a webhook to update to the github repository which ArgoCD is watching, providing a serving image URI to be deployed. 
+- [ ] Deploy model to cluster using Seldon Core and ArgoCD. Demonstrate how ArgoCD provides a GitOps aligned approach to model deployments. Make sure to integrate the model monitoring with Prometheus and have the in-field model performance shown in a grafana dashboard. 
 
+
+- [ ] Customise the MLFlow server to allow for deployments via registering the model registry UI. Given a  serving image uri, let users deploy a model using either one of the strategies; single deployment, A/B testing,  canary, blue-green or shadow deployment. This should work via the UI triggering a webhook to update to the github repository which ArgoCD is watching, providing a serving image URI to be deployed. 
 
 - [ ] Fix landing page of MinIO. Currently, need to programmatically create the bucket during the deployment of the cluster. When logging into the minio service, you're supposed to be redirect to the web UI for all buckets, but a blank screen appears instead. Buckets can only be viewed via a direct URL, and created programmatically like in the `./app/deploy.sh` script. Need to configure `./app/minio/deployment.yaml` to ingress objects to correctly redirect to the land page of MiniIO after after logging into. i.e 
 `https://192.168.49.2/minio/login` should redirect correctly to `http://192.168.49.2/minio/browser` but this is currently a blank screen.
@@ -158,10 +151,7 @@ Rather than using a **path-based ingress** for MinIO, it needs to be change to a
 Need to fix this to make `grafana`'s UI available. Currently, the /grafana path is redirected to the minio landing page. due to the ingress rule the the minio server has 
 
 
-- [ ] deploy `grafana` and `prometheus` to allow seldom deployments to be tracked. Need to fix the minio issue first since `https://192.168.49.2/grafana/` is redirect to minio 
-
-
-- [ ]  Build a `kmlflow` landing page. Framework has already been deployed, but is not working as expected. 
+- [ ] Once minio has been had its ingress changed from path-based to host-based, make sure the UIs for `grafana` and `prometheus` work and to allow seldom deployments to be tracked and monitored via Prometheus, visualised via Grafana. 
 
 
 
