@@ -1,6 +1,5 @@
 FROM python:3.9
 WORKDIR /usr/src/app
-COPY ./ui/kmlflow/ ./ 
 RUN pip install django
-
+COPY ./ui/kmlflow/ ./ 
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

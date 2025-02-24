@@ -286,3 +286,30 @@ spec:
       volumes:
         - name: tmp-volume
           emptyDir: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dashboard-ingress
+  namespace: kubernetes-dashboard
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2  # preserve the path after /dashboard
+    nginx.ingress.kubernetes.io/secure-backends: "true"  # Indicate that the backend uses HTTPS
+    nginx.ingress.kubernetes.io/use-regex: "true" # enable regex for path matching
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"  # Force HTTPS if it's not done automatically
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"  # Additional annotation to handle SSL redirection explicitly
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"  # Ensure backend protocol is HTTPS
+
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /dashboard(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: kubernetes-dashboard
+                port:
+                  number: 443
+

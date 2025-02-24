@@ -104,12 +104,16 @@ kubectl apply -k "github.com/kubeflow/katib.git/manifests/v1beta1/installs/katib
 echo ""
 
 
-echo "Rolling out persistent volume and persistent volume claim for Katib to use as backend storage ..."
+echo "Deploying ingress for Katib UI ..."
+kubectl apply -f "$SCRIPT_DIR/katib/ingress.yaml"
+echo ""
+
+echo "Rolling out PVs and PVCs for Katib and MLFlow ..."
 kubectl apply -f "$SCRIPT_DIR/katib/pv.yaml"
 echo ""
 
 echo "Rolling out cluster dashboard application ..."
-kubectl apply -f "$SCRIPT_DIR/katib/dashboard.yaml"
+kubectl apply -f "$SCRIPT_DIR/dashboard/deployment.yaml"
 echo ""
 
 echo "Creating Service Account ..."
@@ -127,6 +131,8 @@ kubectl apply -f "$SCRIPT_DIR/mlflow/namespace.yaml"
 kubectl get namespaces | grep mlflow 
 kubectl apply -f "$SCRIPT_DIR/mlflow/deployment.yaml"
 kubectl apply -f "$SCRIPT_DIR/mlflow/service.yaml"
+kubectl apply -f "$SCRIPT_DIR/mlflow/ingress.yaml"
+
 
 
 echo "Installing MinIO..."
@@ -168,43 +174,12 @@ echo ""
 echo "Installing ArgoCD ..."
 
 kubectl apply -f "$SCRIPT_DIR/argocd/ns.yaml"
-kubectl apply -f "$SCRIPT_DIR/argocd/cm.yaml"
-
-# Set a counter for retries and maximum number of attempts
-MAX_RETRIES=10
-RETRY_DELAY=10  # seconds
-RETRY_COUNT=0
-
-# Retry loop
-while ! kubectl apply -f "$SCRIPT_DIR/argocd/deployment.yaml"; do
-  RETRY_COUNT=$((RETRY_COUNT+1))
-  if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
-    echo "Deployment failed after $MAX_RETRIES attempts. Exiting."
-    exit 1
-  fi
-  echo "Deployment failed. Retrying in $RETRY_DELAY seconds..."
-  sleep $RETRY_DELAY
-done
-
-echo "ArgoCD deployed successfully!"
+kubectl apply -f "$SCRIPT_DIR/argocd/secrets.yaml"
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply -f "$SCRIPT_DIR/argocd/ingress.yaml"
+kubectl apply -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 echo ""
 echo ""
-
-# echo "Install ArgoCD ...."
-# kubectl apply -f "$SCRIPT_DIR/argocd/deployment.yaml"
-# echo ""
-# echo ""
-
-
-# Apply the Ingress objects to expose services
-echo "Creating Ingress objects for services ..."
-kubectl apply -f "$SCRIPT_DIR/ingress/dashboard-ingress.yaml"
-kubectl apply -f "$SCRIPT_DIR/ingress/katib-ingress.yaml"
-kubectl apply -f "$SCRIPT_DIR/ingress/mlflow-ingress.yaml"
-echo "Ingress objects created successfully."
-echo ""
-echo ""
-
 
 
 
@@ -249,8 +224,8 @@ aws --endpoint-url http://192.168.49.2 s3api put-object \
     --bucket data \
     --key text2text/QA/50k.jsonl \
     --body 50k.jsonl
-    echo ""
-    echo ""
+echo ""
+echo ""
 
 aws --endpoint-url http://192.168.49.2 s3api put-object \
     --bucket data \
@@ -266,7 +241,7 @@ sudo sysctl -p
 echo ""
 echo ""
 
-echo "Removing downloaded data arfifacts ..."
+echo "Removing downloaded data artifacts ..."
 rm 50k.jsonl 
 rm 10k.jsonl 
 echo ""
@@ -274,6 +249,10 @@ echo ""
 
 
 # Print the Ingress URLs for the services with color formatting
+
+echo "To view unified kmlflow dashboard:"
+echo -e "${GREEN}https://192.168.49.2/kmlflow${RESET}"
+
 echo "To view the K8s cluster health head to:"
 echo -e "${GREEN}https://192.168.49.2/dashboard/#${RESET}"
 

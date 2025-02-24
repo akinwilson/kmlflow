@@ -6,20 +6,27 @@ The scripts `deploy.sh` and `remove.sh` are used in tandem to deploy the katib a
 If you do not wish to memorize the variety of `kubectl` commands there are, I recommend using [k9s](https://k9scli.io/); *a terminal based UI to interact with your Kubernetes clusters. The aim of this project is to make it easier to navigate, observe and manage your deployed applications in the wild. K9s continually watches Kubernetes for changes and offers subsequent commands to interact with your observed resources.*
 
 
-### Useful commands 
+
+
+### Docker images: build, tag and push 
+
+Mlflow server image
+```bash
+docker build . -f Dockerfile.mlflow -t mlflow && docker tag mlflow akinolawilson/mlflow && docker push akinolawilson/mlflow:latest
+```
+Kmlflow UI image
+```bash
+docker build . -f docker/Dockerfile.ui -t akinolawilson/kmlflow-ui:latest && docker push akinolawilson/kmlflow-ui:latest
+```
+
+### Kubectl: useful commands 
 
 execute all files ending in yaml with kubectl 
-```
+```bash
 find . -type f -name "*.yaml" -exec kubectl apply -f {} \;
 ```
 
-### Docker containers: build, tag and push 
-
-```
-docker build . -f Dockerfile.mlflow -t mlflow && docker tag mlflow akinolawilson/mlflow && docker push akinolawilson/mlflow:latest
-```
-
-### Open-source remote object store: MinoIO
+### MinoIO remote object store CLI setup 
 To mimic s3 and allow MLflow to use a remote object store for the artifacts, [minIO](https://min.io/) has been deployed.
 
 So before running any examples, these environment variables need to be exported: 
@@ -32,8 +39,6 @@ export AWS_S3_ADDRESSING_PATH="path"
 export AWS_S3_SIGNATURE_VERSION="s3v4"
 export MLFLOW_S3_ENDPOINT_URL="http://192.168.49.2"
 export MLFLOW_S3_IGNORE_TLS="true"
-
-
 ```
 
 Allow to communicate with bucket via MinIO client:
@@ -90,9 +95,8 @@ http://192.168.49.2/minio/browser/mlflow-artifacts
 ```
 These values are set inside of the `/minio` `deployment.yaml`.
 
-
-
+## Docker: useful image testing command 
 Run latest built docker image on host network 
-```
+```bash
 docker run --network host --rm $(docker images | head -n 2 | awk 'FNR == 2 {print $1":"$2}')
 ```

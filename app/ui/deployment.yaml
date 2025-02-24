@@ -52,15 +52,16 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: kmlflow-ui-ingress
+  namespace: ui
   annotations:
-    nginx.ingress.kubernetes.io/use-regex: "true"
-    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    # nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   rules:
     - http:
         paths:
-        - path: /kmlflow # (/|$)(.*)
-          pathType: Prefix # ImplementationSpecific
+        - path: /kmlflow
+          pathType: Prefix
           backend:
             service:
               name: kmlflow-ui

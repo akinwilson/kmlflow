@@ -28,24 +28,12 @@ from argparse_dataclass import ArgumentParser
 from mlflow.models import ModelSignature
 from mlflow.types import Schema, ColSpec
 from lightning.pytorch.loggers import MLFlowLogger
-from babl.config import Args
 import argparse
 import textwrap
 import threading
-# import GPUtil # gather system metrics gpu and vram 
-# import psutil # ``       ``     ``    cpu  and ram
-
-
 
 root = Path(__file__).parent 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
-
-# env variables 
-# for proposal.py 
-
-# KATIB_EXPERIMENT_NAME: The name of the Katib experiment.
-# KATIB_TRIAL_NAME: The name of the current trial.
-# KATIB_TRIAL_UNIQUE_NAME: 
 
 # model_name = "t5-small" # needed for image registry name
 # title = "T5 Question and Answering" # fastapi title 
@@ -105,9 +93,9 @@ class Fitter:
             name="lightning_logs",
         )
         train_loader, val_loader, test_loader = self.setup()
-        print("Created training, validating and test loaders .... ")
+        # print("Created training, validating and test loaders .... ")
         # setup training, validating and testing routines for the model
-        routine = Routine(self.model)
+        routine = Routine(self.model, hpo=self.args.hpo)
 
         # Init a trainer to execute routine
         callback_dict = self.callbacks()
@@ -164,35 +152,9 @@ if __name__=="__main__":
     # using dataclasses to store potential parameters and their defaults. 
     
     parser = ArgumentParser(Args,formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    # Parse known arguments separately
-    args, extra_args = parser.parse_known_args()
-    # Convert dataclass args to dictionary
-    args_dict = vars(args)
-   # Parse additional args with argparse
-    extra_parser = argparse.ArgumentParser()
-    extra_parser.add_argument("--fast-api-title", default="T5 Question and Answering")
-    extra_parser.add_argument("--experiment-description", default="Fine-tuned T5 model for question answering. Runs on GPU.")
-    extra_parser.add_argument("--model-name", default=os.getenv("MODEL_NAME", "t5"))
-    extra_parser.add_argument("--publish", default=True)
-    
-    extra_args = extra_parser.parse_args(extra_args)
-    params = {**vars(args), **vars(extra_args)}
-
-    # Combine into a single argparse.Namespace
-    args = argparse.Namespace(**vars(args), **vars(extra_args))
+    args = parser.parse_args()
     logger.info(f"args:\n\n{args.__dict__}\n\n")
-
-    # KATIB_EXPERIMENT_NAME: The name of the Katib experiment.
-    # KATIB_TRIAL_NAME: The name of the current trial.
-    # KATIB_TRIAL_UNIQUE_NAME: 
-
-    # model_name = "t5-small" # needed for image registry name
-    # title = "T5 Question and Answering" # fastapi title 
-    # artifact_path = "t5_qa_model" # mlflow artifact path for experiment 
-    # mlflow_track_uri = 'http://192.168.49.2/mlflow' # remote tracking uri 
-    # experiment_description = "Fine-tuned T5 model for question answering. Runs on GPU."
-
-
+    params = args.__dict__
 
     # this needs to be set for the FastAPI swagger UI to have an example input and expect output
     # what inputs will your model expect? and what will the outputs be? Set this during fitting
@@ -217,7 +179,7 @@ if __name__=="__main__":
     mlflow.set_experiment(experiment_name)
     experiment = mlflow.get_experiment_by_name(experiment_name)
 
-    logger.info(f"Setup experiment: {experiment_name} ... ")
+    # logger.info(f"Setup experiment: {experiment_name} ... ")
 
 
     run_description = textwrap.dedent(f"""\
@@ -230,10 +192,11 @@ if __name__=="__main__":
 
     with mlflow.start_run(experiment_id=experiment.experiment_id, description=run_description) as run:
         
-        # logging system metrics: default logs every 10 seconds 
+        # logging system metrics: default logs every 10 seconds
+        logger.info("Logging system metrics ... ")
         mlflow.enable_system_metrics_logging()
 
-        # Use MLflow's dataset API (for structured tracking)
+        # Use MLflow's dataset API for dataset tracking and over-arching information 
         ds_train = "/usr/src/app/inputs/50k.jsonl"
         ds_val = "/usr/src/app/inputs/10k.jsonl"
         ds_test = "/usr/src/app/inputs/10k.jsonl"
@@ -252,15 +215,15 @@ if __name__=="__main__":
             mlflow.log_input(dataset, context=regime)
 
 
-        logger.info("Logging datasets to MLFlow ...")
-        log_ds(ds_train, "training")
-        log_ds(ds_val, "validating")
-        log_ds(ds_val, "testing")
-        logger.info("Finished logging datasets to MLFlow")
+        
+        if args.log_datasets:
+            logger.info("Logging datasets to MLFlow ...")
+            log_ds(ds_train, "training")
+            log_ds(ds_val, "validating")
+            log_ds(ds_val, "testing")
+            logger.info("Finished logging datasets to MLFlow")
 
-
-
-        # log model parameters 
+        # log model input parameters 
         for (k,v) in params.items():
              mlflow.log_param(k, v)
 
@@ -272,7 +235,7 @@ if __name__=="__main__":
         m = t_w_m["model"]
 
         tokenizer = t.from_pretrained(full_model_name)
-        # need to parameterised the model config selection 
+        # need to parameterised the model config selection T5Config
         model = m.from_pretrained(full_model_name, **T5Config(d_model=args.d_model,
                                                               d_kv=args.d_kv,
                                                               d_ff=args.d_ff,
@@ -280,7 +243,7 @@ if __name__=="__main__":
                                                               layer_norm_epsilon=args.layer_norm_epsilon).__dict__)
 
 
-        # for ease of use with downstream with FastAPI
+        # For serving purposed used by the MLFlow server to construct serving image using FastAPI framework
         class QuestionAnsweringModel(mlflow.pyfunc.PythonModel):
             def load_context(self, context):
                 self.tokenizer = tokenizer.from_pretrained(context.artifacts["tokenizer"])
@@ -298,20 +261,19 @@ if __name__=="__main__":
 
         # overwritting the MODEL_NAME with the full version
         os.environ['MODEL_NAME'] = full_model_name
-        logger.info(f"Starting fitting routine ... ")
-        fitter= Fitter(model=model, model_name=full_model_name, tokenizer=tokenizer, data_args=args, run_id=run.info.run_id)()
+        # logger.info(f"Starting fitting routine ... ")
+        fitted= Fitter(model=model, model_name=full_model_name, tokenizer=tokenizer, data_args=args, run_id=run.info.run_id)()
         
-        # os.environ['MODEL_NAME']
+
         # during distributed training accessing the model is further down the module tree
         if torch.cuda.is_available() and torch.cuda.device_count() == 1:
-            model = fitter.trainer.model.model
-            # fitter.trainer.model
-            tokenizer = fitter.data_module.tokenizer
+            model = fitted.trainer.model.model
+            tokenizer = fitted.data_module.tokenizer
 
 
+        # saving artifacts locally and then using log_model function to push to object store
         tokenizer.save_pretrained("tokenizer")
         model.save_pretrained("model")
-
         artifacts = { "model": "model",
                       "last.ckpt":"last.ckpt", 
                       "tokenizer":"tokenizer"}
@@ -331,24 +293,23 @@ if __name__=="__main__":
 
         # set tags inside the run context
         mlflow.set_tag("model_name", model_name)
-        mlflow.set_tag("katib_trial_unique_name", os.getenv("KATIB_TRIAL_UNIQUE_NAME", ""))
+        mlflow.set_tag("katib_trial_name", os.getenv("KATIB_TRIAL_NAME", ""))
+                
         
-        print("\n\n")
-        print(f"Run ID: {run_id}")
-        print(f"Experiment ID: {experiment_id}")
-        print(f"Artifact URI: {model_uri}")
-        print(f'Katib ID: {os.getenv("KATIB_TRIAL_UNIQUE_NAME", "")}')
-        print("\n\n")
+        logger.info(f"Run ID: {run_id}")
+        logger.info(f"Experiment ID: {experiment_id}")
+        logger.info(f"Artifact URI: {model_uri}")
+        logger.info(f'Katib Trial Name: {os.getenv("KATIB_TRIAL_NAME", "")}')
         
-
         if args.publish:
+            logger.info("Building and pushing serving container to remote repository ...")
             docker_username = os.getenv("DOCKER_USERNAME")
             docker_password = os.getenv("DOCKER_PASSWORD")
             # need to log into the docker with given credentials 
             if docker_username and docker_password:
                 subprocess.run(
                     ["docker", "login", "--username", docker_username, "--password", docker_password],
-                    check=True
+                    check=True,stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
                 )
             else:
                 raise ValueError("Docker credentials not found in environment variables.")
@@ -390,19 +351,26 @@ if __name__=="__main__":
 
             with open(root / "Dockerfile", "w") as f:
                 f.write(dockerfile_content)
-
+            logger.info(f"Starting subprocess of building serving image {image_name}...")
             # Build and push serving docker image
-
-            os.system(f"docker build {root} -t {image_name}")
-            os.system(f"docker push {image_name}")
+            subprocess.run(f"docker build {root} -t {image_name}", shell=True, check=True,stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            logger.info(f"Finished subprocess of building serving image {image_name}")
+            logger.info(f"Starting subprocess to push serving image {image_name} to remote repository...")
+            subprocess.run(f"docker push {image_name}", shell=True, check=True,stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            logger.info(f"Finished subprocess to push serving image {image_name} to remote repository")
 
             # clean up 
-            os.remove(root / "Dockerfile")
-            os.remove(root / "api_examples.json")
-            os.remove(root / "api_env")
-            # complete script and exit with no errors
-            sys.exit(0)
-        # complete script and exit with no errors
-        sys.exit(0)
+            logger.info(f"Cleaning up serving image construction artifacts ... ")
+            subprocess.run(f"rm {root / 'Dockerfile'}", shell=True, check=True,stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(f"rm {root / 'api_examples.json'}", shell=True, check=True,stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(f"rm {root / 'api_env'}", shell=True, check=True,stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            logger.info(f"Finished cleaning up serving image construction artifacts")
+
+            logger.info("Finished! - setting MLFlow status run to FINISHED")
+            mlflow.end_run(status="FINISHED")  
+            sys.exit(0) 
+        logger.info(f"Finished! - setting MLFlow status run to FINISHED")
+        mlflow.end_run(status="FINISHED")  
+        sys.exit(0) 
 
 

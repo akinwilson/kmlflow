@@ -156,18 +156,10 @@ with mlflow.start_run(experiment_id=experiment.experiment_id, description=run_de
             f.write(dockerfile_content)
 
         # Build and push Docker image
-        # executing these commands is dependent on where the file is called from 
-
-        # assuming:  python examples/publish.py 
-        # then the build context: ./examples
-
-        # also you will need the docker CLI tool install where ever this is is run, 
-        # and have credentials for the respective registry that the image is pushed too.
-
         os.system(f"docker build {root} -t {image_name}")
         os.system(f"docker push {image_name}")
-
         # clean up 
         os.remove(root / "Dockerfile")
         os.remove(root / "api_examples.json")
         os.remove(root / "api_env.json")
+        
