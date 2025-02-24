@@ -103,7 +103,7 @@ visit the [MLFlow UI](http://192.168.49.2/mlflow/#) and find your experiment. Un
 
 
 
-Run the following example to see how the hyperparameter optimisation process works in the context of a proposed experiment, and their encompassing trials. to see results and process unfolding, see the [Katib UI](http://192.168.49.2/katib/). 
+Run the following example to see how the hyperparameter optimisation process works in the context of a proposed experiment, and their encompassing trials, using the Katib service. to see results and watch the process unfold, see the [Katib UI](http://192.168.49.2/katib/) and [MLFlow UI](http://192.168.49.2/mlflow/). If you want to then reference the most optimal trial found from your executed experiment, identify the `Trial name` from the Katib UI, and head over the the MLFlow UI and select your experiment and use the search function, searching for `tags.katib_trial_name='<trial name>'` to find the most successful trial. 
 ```bash
 python examples/proposal.py
 ```
