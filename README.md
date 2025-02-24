@@ -108,6 +108,32 @@ Run the following example to see how the hyperparameter optimisation process wor
 python examples/proposal.py
 ```
 
+if you wish to modify the parameters to the fitting container, and want to know what possible options there are to perform hyperparameter optimisation over, you can run 
+```bash 
+docker run --rm -e MODEL_NAME=t5 akinolawilson/pytorch-train-gpu:latest python3 fit.py --help
+```
+which will output the help information about the `fit.py` function, like these (followed by information about each parameter not shown below).  
+```bash
+usage: fit.py [-h] [--vocab-size VOCAB_SIZE] [--d-model D_MODEL] [--d-kv D_KV]
+              [--d-ff D_FF] [--num-layers NUM_LAYERS] [--num-heads NUM_HEADS]
+              [--relative-attention-num-buckets RELATIVE_ATTENTION_NUM_BUCKETS]
+              [--relative-attention-max-distance RELATIVE_ATTENTION_MAX_DISTANCE]
+              [--dropout-rate DROPOUT_RATE]
+              [--layer-norm-epsilon LAYER_NORM_EPSILON]
+              [--initializer-factor INITIALIZER_FACTOR]
+              [--feed-forward-proj FEED_FORWARD_PROJ]
+              [--no-is-encoder-decoder] [--no-use-cache]
+              [--pad-token-id PAD_TOKEN_ID] [--eos-token-id EOS_TOKEN_ID]
+              [--classifier-dropout CLASSIFIER_DROPOUT]
+              [--input-max-len INPUT_MAX_LEN]
+              [--output-max-len OUTPUT_MAX_LEN]
+              [--data-path-root DATA_PATH_ROOT]
+              [--fast-api-title FAST_API_TITLE] [--no-publish]
+              [--experiment-description EXPERIMENT_DESCRIPTION]
+              [--no-log-datasets] [--es-patience ES_PATIENCE]
+              [--model-dir MODEL_DIR] [--max-epoch MAX_EPOCH] [--fast-dev-run]
+              [--no-hpo] [--no-mini-dataset]
+```
 
 
 ## To do Feb 20 2025
