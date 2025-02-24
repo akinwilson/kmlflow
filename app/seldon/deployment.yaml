@@ -28,7 +28,7 @@ spec:
       serviceAccountName: seldon-manager
       containers:
         - name: manager
-          image: docker.io/seldonio/seldon-core-operator:1.19.0
+          image: docker.io/seldonio/seldon-core-operator:2.8.5
           imagePullPolicy: IfNotPresent
           args:
             - "--enable-leader-election"
@@ -47,3 +47,129 @@ spec:
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 10
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: seldondeployments.machinelearning.seldon.io
+spec:
+  group: machinelearning.seldon.io
+  names:
+    kind: SeldonDeployment
+    plural: seldondeployments
+    singular: seldondeployment
+  scope: Namespaced
+  versions:
+    - name: v1alpha2  # Add v1alpha2 version
+      served: true    # Enable this version to be served
+      storage: false  # Set to false if v1 is the storage version
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                predictors:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      replicas:
+                        type: integer  # Added replicas field
+                      graph:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                      componentSpecs:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            spec:
+                              type: object
+                              properties:
+                                containers:
+                                  type: array
+                                  items:
+                                    type: object
+                                    properties:
+                                      name:
+                                        type: string
+                                      image:
+                                        type: string
+    - name: v1        # Keep v1 version
+      served: true    # Enable this version to be served
+      storage: true   # Set to true if v1 is the storage version
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                predictors:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      replicas:
+                        type: integer  # Added replicas field
+                      graph:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                      componentSpecs:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            spec:
+                              type: object
+                              properties:
+                                containers:
+                                  type: array
+                                  items:
+                                    type: object
+                                    properties:
+                                      name:
+                                        type: string
+                                      image:
+                                        type: string
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: seldon-manager
+  namespace: seldon-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: seldon-manager-role
+rules:
+  - apiGroups: ["machinelearning.seldon.io"]
+    resources: ["seldondeployments"]
+    verbs: ["*"]
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps"]
+    verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: seldon-manager-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: seldon-manager-role
+subjects:
+  - kind: ServiceAccount
+    name: seldon-manager
+    namespace: seldon-system
