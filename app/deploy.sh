@@ -175,9 +175,11 @@ echo "Installing ArgoCD ..."
 
 kubectl apply -f "$SCRIPT_DIR/argocd/ns.yaml"
 kubectl apply -f "$SCRIPT_DIR/argocd/secrets.yaml"
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 kubectl apply -f "$SCRIPT_DIR/argocd/ingress.yaml"
-kubectl apply -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+# change the server to be hosted under path /argo
+curl -s https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml | \
+yq eval '(select(.kind == "Deployment" and .metadata.name == "argocd-server").spec.template.spec.containers[0].args) += ["--rootpath=/argo"]' - | \
+kubectl apply -f - -n argocd
 echo ""
 echo ""
 
@@ -262,8 +264,16 @@ echo -e "${GREEN}https://192.168.49.2/katib${RESET}"
 echo "To access MLFlow's user interface head to:"
 echo -e "${GREEN}https://192.168.49.2/mlflow/#${RESET}"
 
-# echo "To access ArgoCD's user interface head to:"
-# echo -e "${GREEN}https://192.168.49.2/argo/${RESET}"
+echo "To access ArgoCD's user interface head to:"
+echo -e "${GREEN}https://192.168.49.2/argo/${RESET}"
+echo ""
+echo ""
+ARGO_PW=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
+echo "To access the ArgoCD UI, you will need the username and password which are:"
+echo -e "username:${MAGENTA}admin${RESET}"
+echo -e "password:${MAGENTA}$ARGO_PW${RESET}"
+echo ""
+echo ""
 
 # echo "To access Grafana's user interface head to:"
 # echo -e "${GREEN}https://192.168.49.2/grafana/${RESET}"
