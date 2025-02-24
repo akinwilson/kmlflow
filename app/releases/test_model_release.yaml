@@ -6,7 +6,7 @@ metadata:
 spec:
   predictors:
     - name: default
-      replicas: 2
+      replicas: 1
       componentSpecs:
         - spec:
             containers:
