@@ -62,18 +62,12 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /usr/src/app
 
-
 COPY docker/requirements.txt . 
 RUN pip install -r requirements.txt 
 
-RUN mkdir -p /var/log/katib
-RUN chmod a+w /var/log/katib
 
-RUN chmod -R  777 /var/log/katib/
-RUN touch /var/log/katib/metrics.log
 COPY api.py .
 COPY fit.py .
-
 
 # Set default command
 CMD ["sh", "-c", "python3 fit.py --fast-api-title 'T5 Question and Answering' --d-model 512 --d-kv 64 --d-ff 2048 --layer-norm-epsilon 1e-06 --dropout-rate 0.1"]
