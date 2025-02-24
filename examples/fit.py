@@ -189,13 +189,12 @@ if __name__=="__main__":
     [Research paper](https://arxiv.org/abs/1910.10683).
     """)
 
+    # logging system metrics: default logs every 10 seconds
+    logger.info("Logging system metrics to MLFlow... ")
+    mlflow.enable_system_metrics_logging()
 
     with mlflow.start_run(experiment_id=experiment.experiment_id, description=run_description) as run:
         
-        # logging system metrics: default logs every 10 seconds
-        logger.info("Logging system metrics ... ")
-        mlflow.enable_system_metrics_logging()
-
         # Use MLflow's dataset API for dataset tracking and over-arching information 
         ds_train = "/usr/src/app/inputs/50k.jsonl"
         ds_val = "/usr/src/app/inputs/10k.jsonl"
