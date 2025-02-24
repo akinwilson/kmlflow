@@ -5,6 +5,7 @@ metadata:
   namespace: argocd
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /argo/$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"  # Redirect HTTP to HTTPS
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"  # Force HTTPS
     nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"  # Argo CD serves HTTPS
