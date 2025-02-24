@@ -35,13 +35,6 @@ import threading
 root = Path(__file__).parent 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-# env variables 
-# for proposal.py 
-
-# KATIB_EXPERIMENT_NAME: The name of the Katib experiment.
-# KATIB_TRIAL_NAME: The name of the current trial.
-# KATIB_TRIAL_UNIQUE_NAME: 
-
 # model_name = "t5-small" # needed for image registry name
 # title = "T5 Question and Answering" # fastapi title 
 # artifact_path = "t5_qa_model" # mlflow artifact path for experiment 

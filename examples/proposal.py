@@ -25,7 +25,7 @@ from kubeflow.katib import V1beta1CollectorSpec as CollectorSpec
 
 
 hpo_optimisation_aglo = 'bayesianoptimization'
-
+namespace = "ku"
 
 
 # Experiment name and namespace.
