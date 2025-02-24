@@ -1,0 +1,44 @@
+apiVersion: machinelearning.seldon.io/v1
+kind: SeldonDeployment
+metadata:
+  name: "{{ model }}-{{ version }}"
+  namespace: models
+spec:
+  predictors:
+    - name: "{{ predictor_name }}"
+      replicas: {{ replicas }}
+      graph:
+        name: "{{ graph_name }}"
+        type: MODEL
+        implementation: CUSTOM
+        modelUri: "{{ image_uri }}"  # Custom serving image with Seldon-compatible predict endpoint
+
+      # Rolling Update Strategy (Default)
+      rollingUpdate: {{ rollingUpdate }}
+
+      {{- if canary }}
+      canary: true
+      traffic:
+        split: {{ traffic_split }}  # Example: "80,20" (80% old, 20% new)
+      {{- end }}
+
+      {{- if abTest }}
+      abtest: true
+      traffic:
+        split: {{ traffic_split }}  # Example: "50,50"
+      predictors:
+        - name: "{{ predictor_name }}-A"
+          replicas: {{ replicas_A }}
+          modelUri: "{{ image_uri_A }}"
+        - name: "{{ predictor_name }}-B"
+          replicas: {{ replicas_B }}
+          modelUri: "{{ image_uri_B }}"
+      {{- end }}
+
+      {{- if shadow }}
+      shadow: true
+      shadowPredictor:
+        name: "{{ shadow_predictor_name }}"
+        replicas: {{ shadow_replicas }}
+        modelUri: "{{ shadow_image_uri }}"
+      {{- end }}
