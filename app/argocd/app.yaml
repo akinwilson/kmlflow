@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: seldon-models
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: "https://github.com/akinwilson/kmlflow.git"
+    targetRevision: main
+    path: app/releases  # Folder containing SeldonDeployment YAMLs
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: models
+  syncPolicy:
+    automated:
+      prune: true  # Remove old resources
+      selfHeal: true  # Fix drift automatically

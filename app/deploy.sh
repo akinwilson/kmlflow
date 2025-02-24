@@ -168,6 +168,8 @@ echo ""
 
 echo "Install seldon core ...."
 kubectl apply -f "$SCRIPT_DIR/seldon/deployment.yaml"
+kubectl apply -f "$SCRIPT_DIR/seldon/ns.yaml"
+
 echo ""
 echo ""
 
@@ -180,10 +182,9 @@ kubectl apply -f "$SCRIPT_DIR/argocd/ingress.yaml"
 curl -s https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml | \
 yq eval '(select(.kind == "Deployment" and .metadata.name == "argocd-server").spec.template.spec.containers[0].args) += ["--rootpath=/argo"]' - | \
 kubectl apply -f - -n argocd
+kubectl apply -f "$SCRIPT_DIR/argocd/app.yaml"
 echo ""
 echo ""
-
-
 
 # creating mlflow bucket 
 echo "Coniguring aws cli to use minIO access key and secret ... "
