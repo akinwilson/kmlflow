@@ -4,16 +4,19 @@ metadata:
   name: argocd-ingress
   namespace: argocd
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/rewrite-target: /argo/$2
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"  # Redirect HTTP to HTTPS
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"  # Force HTTPS
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"  # Argo CD serves HTTPS
 spec:
   ingressClassName: nginx
   rules:
     - http:
         paths:
-          - path: /argocd(/|$)(.*)
+          - path: /argo(/|$)(.*)
             pathType: ImplementationSpecific
             backend:
               service:
                 name: argocd-server
                 port:
-                  number: 80
+                  number: 443
