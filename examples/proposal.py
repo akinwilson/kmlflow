@@ -1,12 +1,12 @@
 '''
-proposal of experiment 
+proposal of experiment of trials 
 
 and experiment in this context refers to the a trial of many (or just one) training jobs
 that are being run using an optimisation process. 
-
-
 '''
 import os
+from typing import List
+from dataclasses import dataclass, field
 from kubeflow.katib import KatibClient
 from kubernetes.client import V1ObjectMeta as ObjectMeta
 from kubeflow.katib import V1beta1Experiment as Experiment
@@ -18,9 +18,20 @@ from kubeflow.katib import V1beta1ParameterSpec as ParameterSpec
 from kubeflow.katib import V1beta1TrialTemplate as TrialTemplate
 from kubeflow.katib import V1beta1TrialParameterSpec as TrialParameterSpec
 
+
+from kubeflow.katib import V1beta1MetricsCollectorSpec as MetricsCollectorSpec
+from kubeflow.katib import V1beta1CollectorSpec as CollectorSpec
+from kubeflow.katib import V1beta1SourceSpec as SourceSpec
+
+# Define the push-based metrics collector
+metrics_collector_spec = MetricsCollectorSpec(
+    collector=CollectorSpec(kind="Push"),
+)
+
+
 # Experiment name and namespace.
 namespace = "kubeflow"
-experiment_name = "t5-bay-opt-v6"
+experiment_name = "t5-bay-opt-v2"
 
 
 metadata = ObjectMeta(
@@ -44,9 +55,73 @@ metadata = ObjectMeta(
 # for more information on the parameters for each blackbox-based optimisaiton algorithm 
 
 
+
+@dataclass
+class BayesianOptimization:
+    random_state: int = field(default=42, metadata={"help": "Random seed"})
+    n_initial_points : int =  field(default=10, metadata={"help":"Number of initial random evaluations"})
+    # n_iter : int = field(default=25, metadata={"help":"Number of Bayesian optimization steps"})
+    base_estimator : str = field(default='GP', metadata={"help": "Surrogate model. Can be: 'GP', 'RF', 'ET' or 'GBRT'"})
+
+
+@dataclass
+class Random:
+    random_state: int = field(default=42, metadata={"help": "Random seed"})
+
+@dataclass
+class Grid:
+    random_state: int = field(default=42, metadata={"help": "Random seed"})
+
+
+@dataclass
+class TreeOfParzenEstimators:
+    random_state: int = field(default=42, metadata={"help": "Random seed"})
+    n_EI_candidates : int =  field(default=5, metadata={"help":"Number of candidates for EI"})
+    gamma : int = field(default=25, metadata={"help":"Fraction of observations for modeling"})
+    prior_weight : float = field(default=1.1, metadata={"help": "Smoothing factor for counts, to avoid having 0 probability. Value must be > 0."})
+
+
+
+@dataclass
+class Hyperband:
+    random_state: int = field(default=42, metadata={"help": "Random seed"})
+    eta : int =  field(default=3, metadata={"help":"Reduction factor for early stopping"})
+
+
+# @dataclass
+# class PopulationBasedTraining:
+#     random_state : int = field(default=42, metadata={"help": "Random seed"})
+#     n_population : int = field(default=10, metadata={"help": "Number of models in the population"})
+#     resample_probability : float = field(default=0.2, metadata={"help": "Probability of resampling"})
+#     truncation_threshold : List[int] = field(default_factory= lambda x : [1.2, 0.8], metadata={"help": "Perturbation factors"})
+
+
+@dataclass
+class SimulatedAnnealing:
+    random_state: int = field(default=42, metadata={"help": "Random seed"})
+    initial_temperature : int = field(default=1000, metadata={"help": "Initial temperature"}) 
+    cooling_rate : float = field(default=0.95, metadata={"help": "Cooling rate"})
+
+
+@dataclass
+class DifferentialEvolution:
+    random_state: int = field(default=42, metadata={"help": "Random seed"})
+    strategy : str = field(default='best1bin', metadata={"help":"Mutation strategy"}) 
+    popsize :  int = field(default=10, metadata={"help":"Population size"})
+
+@dataclass
+class CovarianceMatrixAdaptationEvolutionStrategy:
+    random_state: int = field(default=42, metadata={"help": "Random seed"})
+    sigma : float = field(default=0.5,  metadata={"help": "Initial standard deviation"})
+
+
+
 algorithm_spec= AlgorithmSpec(
-    algorithm_name="bayesianoptimization"
+    algorithm_name="bayesianoptimization",
+    algorithm_settings= [{"name": k, "value": str(v)} for (k,v) in BayesianOptimization().__dict__.items()]
 )
+
+
 
 # Objective specification.
 objective_spec=ObjectiveSpec(
@@ -75,7 +150,7 @@ parameters=[
     ),
 ]
 
-
+# python3 /usr/src/app/fit.py --fast-api-title "'T5 Question and Answering'" --d-model 512 --d-kv 64 --d-ff 2048
 
 # JSON template specification for the Trial's Worker Kubernetes Job.
 trial_spec = {
@@ -90,6 +165,7 @@ trial_spec = {
             },
             "spec": {
                 "hostNetwork": True,
+                "dnsPolicy": "ClusterFirstWithHostNet",
                 "containers": [
                     {
                         "name": "training-container",
@@ -98,8 +174,9 @@ trial_spec = {
                         "command": ["python3", "/usr/src/app/fit.py"],
                         "args": ["--fast-api-title", "'T5 Question and Answering'",
                                 "--d-model","512",
-                                " --d-kv", "64",
+                                "--d-kv", "64",
                                 "--d-ff","2048",
+                                "--no-log-datasets",
                                 "--layer-norm-epsilon","${trialParameters.layerNormEpsilon}",
                                 "--dropout-rate","${trialParameters.dropout}"],
 
@@ -228,6 +305,7 @@ experiment = Experiment(
         objective=objective_spec,
         parameters=parameters,
         trial_template=trial_template,
+        metrics_collector_spec=metrics_collector_spec
     )
 )# Create Katib client.
 kclient = KatibClient(namespace='kubeflow')
