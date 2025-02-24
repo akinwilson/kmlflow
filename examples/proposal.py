@@ -24,13 +24,12 @@ from kubeflow.katib import V1beta1CollectorSpec as CollectorSpec
 
 
 
-hpo_optimisation_aglo = 'bayesianoptimization'
-namespace = "ku"
 
 
 # Experiment name and namespace.
 namespace = "kubeflow"
-experiment_name = "t5-bay-opt-v2"
+hpo_optimisation_aglo = 'bayesianoptimization'
+experiment_name = "t5-bay-opt-v3"
 
 
 metadata = ObjectMeta(
@@ -184,7 +183,6 @@ trial_spec = {
                                 "--d-model","512",
                                 "--d-kv", "64",
                                 "--d-ff","2048",
-                                "--no-log-datasets",
                                 "--layer-norm-epsilon","${trialParameters.layerNormEpsilon}",
                                 "--dropout-rate","${trialParameters.dropout}"],
 
