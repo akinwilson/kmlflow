@@ -24,15 +24,14 @@ load_dotenv("api_env")
 title = os.getenv('FASTAPI_TITLE', "T5 Question Answering")
 desc = os.getenv('FASTAPI_DESC', "A FastAPI service for question answering using a fine-tuned T5 model. The model runs on GPU if available.")
 version = os.getenv('FASTAPI_VERSION', "1.0")
-# e.g load modele from run       : "runs:/<run_id>/<model_path>"
-#  or from model registry        : "models:/<model_name>/<version>"
-# or load model from remote store: "s3://<bucket_name>/<path_to_model>"
 model_uri = os.getenv('MLFLOW_MODEL_URI',"s3://mlflow-artifacts/t5_qa_model" )
+model_version = os.getenv("FASTAPI_VERSION", "")
 # Log environment variables
 logger.info(f"FASTAPI_TITLE: {title}")
 logger.info(f"FASTAPI_DESC: {desc}")
 logger.info(f"FASTAPI_VERSION: {version}")
 logger.info(f"MLFLOW_MODEL_URI: {model_uri}")
+logger.info(f"MODEL_VERSION: {model_version}")
 
 app = FastAPI(
     title=title,
@@ -41,13 +40,19 @@ app = FastAPI(
 )
 
 # Load the MLflow model
+model_loaded = False 
 try:
     logger.info("Loading MLflow model...")
+    logger.info(f"Loading from: {model_uri}")
     model = mlflow.pyfunc.load_model(model_uri)
-    logger.info("MLflow model loaded successfully.")
+    logger.info(f"MLflow model loaded successfully from {model_uri}.")
+    model_loaded = True 
 except Exception as e:
     logger.error(f"Failed to load MLflow model: {e}")
     raise
+
+
+
 
 
 # Move model to GPU if available
@@ -103,7 +108,7 @@ request_model = create_pydantic_model("Request", input_schema)
 response_model = create_pydantic_model("Response", output_schema)
 
 
-@app.post("/predict", response_model=response_model, summary="Get response to a request")
+@app.post(f"/v2/models/{model_version}/infer", response_model=response_model, summary="Get response to a request")
 def predict(request: request_model):
     """
     The model runs on GPU if available for faster inference.
@@ -112,15 +117,36 @@ def predict(request: request_model):
         answer = model.predict(request.dict())  # Use request.dict() to convert Pydantic model to dict
         logger.info("Prediction completed successfully.")
         logger.info(f"{answer=}")
+        # Application-specific - need to parameterise the returned json to match the response model 
+        # WITHOUT needing to explicitly mention the key name; answer 
+        ###############################################################################################
         return {"answer":answer}
-
+        ###############################################################################################
     except Exception as e:
         logger.error(f"Prediction failed: {e}")
         raise
 
 
-@app.get("/", summary="API Health Check")
+@app.get("/", summary="Root")
 def root():
+    logger.info("Root hit")
+    return {"message": f"{title} API is running. Visit /docs for Swagger UI."}
+
+@app.get("/v2/health/live", summary="Live probe")
+def live():
+    try:
+        if model_loaded:
+            return {"status": "ok", "message": "Application is alive and model is loaded."}
+        else:
+            # If model hasn't loaded yet, indicate that it's not ready
+            return {"status": "not_ready", "message": "Model is not yet loaded."}
+    except Exception as e:
+        logger.error(f"Live probe failed: {e}")
+        return {"status": "error", "message": "Application is not responding."}    
+
+
+@app.get("/v2/health/ready", summary="API Health Check")
+def ready():
     """
     Health check endpoint to verify that the API is running.
     

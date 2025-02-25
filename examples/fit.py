@@ -260,19 +260,24 @@ if __name__=="__main__":
 
         # overwritting the MODEL_NAME with the full version
         os.environ['MODEL_NAME'] = full_model_name
-        # logger.info(f"Starting fitting routine ... ")
+        logger.info(f"Starting fitting routine ... ")
         fitted= Fitter(model=model, model_name=full_model_name, tokenizer=tokenizer, data_args=args, run_id=run.info.run_id)()
-        
+        logger.info(f"Finished fitting routine")
 
         # during distributed training accessing the model is further down the module tree
         if torch.cuda.is_available() and torch.cuda.device_count() == 1:
             model = fitted.trainer.model.model
             tokenizer = fitted.data_module.tokenizer
 
-
+        # extract the components of the network independent of number of GPUs used 
+        # during distributed training, the model is further down the object tree and
+        # hence, the above condition checks for this; whether the model is distributed or not. 
+        model = fitted.trainer.model.model
+        tokenizer = fitted.data_module.tokenizer
         # saving artifacts locally and then using log_model function to push to object store
         tokenizer.save_pretrained("tokenizer")
         model.save_pretrained("model")
+
         artifacts = { "model": "model",
                       "last.ckpt":"last.ckpt", 
                       "tokenizer":"tokenizer"}
@@ -291,6 +296,7 @@ if __name__=="__main__":
         model_uri = mlflow.get_artifact_uri(os.getenv("MLFLOW_ARTIFACT_PATH", "t5_qa_model"))
 
         # set tags inside the run context
+        mlflow.set_tag("run_id", run_id)
         mlflow.set_tag("model_name", model_name)
         mlflow.set_tag("katib_trial_name", os.getenv("KATIB_TRIAL_NAME", ""))
                 
@@ -315,8 +321,7 @@ if __name__=="__main__":
 
             # using local docker client to publish image to remote registry
             image_name = f'{os.getenv("DOCKER_USERNAME", "akinolawilson")}/{full_model_name}:{run_id[:8]}'
-            mlflow.set_tag("serving_container", image_name)
-            mlflow.set_tag("local_inference", f"docker pull {image_name} && docker run --network host --rm {image_name}")
+
             # api environment variables.
             api_env=f"""
             FASTAPI_TITLE={args.fast_api_title}
@@ -364,6 +369,11 @@ if __name__=="__main__":
             subprocess.run(f"rm {root / 'api_examples.json'}", shell=True, check=True,stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             subprocess.run(f"rm {root / 'api_env'}", shell=True, check=True,stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             logger.info(f"Finished cleaning up serving image construction artifacts")
+
+            logger.info(f"Setting tags in MLFlow related to image URI ... ")
+            mlflow.set_tag("serving_container", image_name)
+            mlflow.set_tag("local_inference", f"docker run --network host --rm {image_name}")
+            logger.info(f"Set tags in MLFlow related to image URI")
 
             logger.info("Finished! - setting MLFlow status run to FINISHED")
             mlflow.end_run(status="FINISHED")  

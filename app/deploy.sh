@@ -168,8 +168,7 @@ echo ""
 
 echo "Install seldon core ...."
 kubectl apply -f "$SCRIPT_DIR/seldon/deployment.yaml"
-kubectl apply -f "$SCRIPT_DIR/seldon/ns.yaml"
-
+# kubectl apply -f "$SCRIPT_DIR/seldon/ns.yaml"
 echo ""
 echo ""
 

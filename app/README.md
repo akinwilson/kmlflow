@@ -107,3 +107,38 @@ curl -s https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/inst
 yq eval '(select(.kind == "Deployment" and .metadata.name == "argocd-server").spec.template.spec.containers[0].args) += ["--rootpath=/argo"]' - | \
 kubectl apply -f -
 ```
+
+## Certificate manager for seldon core deployment
+```bash
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml
+```
+
+## Helpful K8S commands
+
+```bash 
+/tmp/k8s-webhook-server/serving-certs/tls.crt
+```
+Delete a deployment
+```bash 
+ kubectl delete deployment <deployment-name> -n <namespace>
+```
+Rollout a restart of a deployment 
+```bash
+kubectl rollout restart deployment <deployment-name> -n <namespace>
+```
+Create K8s self-signed CA certificates
+```bash 
+openssl req -x509 -new -nodes -keyout ca.key -out ca.crt -subj "/CN=seldon-webhook-ca" -days 365
+```
+and the add them as secrets to the respective service 
+
+```bash 
+kubectl create secret tls seldon-webhook-server-cert \
+  --cert=ca.crt \
+  --key=ca.key \
+  -n seldon-system
+```
+decode certicate 
+```bash
+cat ca.crt | base64 -w 0
+```
