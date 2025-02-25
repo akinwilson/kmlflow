@@ -1,14 +1,107 @@
 apiVersion: machinelearning.seldon.io/v1
 kind: SeldonDeployment
 metadata:
-  name: seldon-models
+  name: test-server-alone
   namespace: models
 spec:
+  protocol: v2
   predictors:
-    - name: default
-      replicas: 1
-      componentSpecs:
-        - spec:
-            containers:
-              - name: serving-container
-                image: akinolawilson/t5-small:e25a09a2
+  - name: default
+    replicas: 1
+    graph:
+      name: fc5e18ab
+      implementation: FC5E18AB_SERVER
+      # modelUri: s3://mlflow-artifacts/4/fc5e18abdf1840bcb622a0fc77617f28/artifacts/t5_qa_model
+    svcOrchSpec:
+      env:
+      - name: SELDON_LOG_LEVEL
+        value: DEBUG
+
+# apiVersion: machinelearning.seldon.io/v1
+# kind: SeldonDeployment
+# metadata:
+#   name: seldon-models
+#   namespace: models
+# spec:
+#   protocol: v2
+#   predictors:
+#   - name: fc5e18ab
+#     replicas: 1
+#     graph:
+#       name: fc5e18ab
+#       type: MODEL
+#       children: []
+#       endpoint:
+#         type: REST 
+#       implementation: FC5E18AB_SERVER # TRITON_SERVER  # or CUSTOM if you have a custom server 
+#       # modelUri: "s3://mlflow-artifacts/4/fc5e18abdf1840bcb622a0fc77617f28/artifacts/t5_qa_model"
+#     svcOrchSpec:
+#       env:
+#       - name: LOG_LEVEL
+#         value: DEBUG
+#     componentSpecs:
+#       - spec:
+#           containers:
+#           - image: docker.io/akinolawilson/t5-small:fc5e18ab
+#             name: serving-container
+#             imagePullPolicy: IfNotPresent 
+#             ports:
+#               - containerPort: 8080
+#                 name: http
+#                 protocol: TCP
+#             readinessProbe:
+#               httpGet:
+#                 path: /v2/health/ready
+#                 port: 8080
+#               initialDelaySeconds: 20
+#               periodSeconds: 10
+#             livenessProbe:
+#               httpGet:
+#                 path: /v2/health/live
+#                 port: 8080
+#               initialDelaySeconds: 20  
+#               periodSeconds: 10
+
+
+
+# apiVersion: machinelearning.seldon.io/v1
+# kind: SeldonDeployment
+# metadata:
+#   name: seldon-models
+#   namespace: models
+#   # annotations:
+#   #   seldon.io/no-engine: "true"
+# spec:
+#   protocol: v2
+#   predictors:
+#   - name: fc5e18ab
+#     replicas: 1
+#     graph:
+#       name: fc5e18ab
+#       type: MODEL
+#       children: []
+#       endpoint:
+#         type: REST 
+#       implementation: TRITON_SERVER  # or CUSTOM if you have a custom server # 
+#     componentSpecs:
+#       - spec:
+#           containers:
+#           - image: docker.io/akinolawilson/t5-small:fc5e18ab
+#             name: serving-container
+#             imagePullPolicy: IfNotPresent 
+#             ports:
+#               - containerPort: 8080
+#                 name: http
+#                 protocol: TCP
+#             readinessProbe:
+#               httpGet:
+#                 path: /v2/health/ready
+#                 port: 8080
+#               initialDelaySeconds: 20
+#               periodSeconds: 10
+#             livenessProbe:
+#               httpGet:
+#                 path: /v2/health/live
+#                 port: 8080
+#               initialDelaySeconds: 20  
+#               periodSeconds: 10

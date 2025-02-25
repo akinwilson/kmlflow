@@ -1,0 +1,46 @@
+apiVersion: machinelearning.seldon.io/v1
+kind: SeldonDeployment
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"machinelearning.seldon.io/v1","kind":"SeldonDeployment","metadata":{"annotations":{},"name":"seldon-models","namespace":"models"},"spec":{"predictors":[{"componentSpecs":[{"spec":{"containers":[{"image":"docker.io/akinolawilson/t5-small:fc5e18ab","imagePullPolicy":"IfNotPresent","livenessProbe":{"httpGet":{"path":"/v2/health/live","port":8080},"initialDelaySeconds":20,"periodSeconds":10},"name":"serving-container","ports":[{"containerPort":8080,"name":"http","protocol":"TCP"}],"readinessProbe":{"httpGet":{"path":"/v2/health/ready","port":8080},"initialDelaySeconds":20,"periodSeconds":10}}]}}],"graph":{"children":[],"endpoint":{"type":"REST"},"implementation":"FC5E18AB_SERVER","name":"fc5e18ab","type":"MODEL"},"name":"fc5e18ab","replicas":1}],"protocol":"v2"}}
+  creationTimestamp: "2025-02-25T18:43:10Z"
+  generation: 1
+  name: seldon-models
+  namespace: models
+  resourceVersion: "275226"
+  uid: 7ad096b3-c719-4b95-986c-25ae3e3e9640
+spec:
+  predictors:
+  - componentSpecs:
+    - spec:
+        containers:
+        - image: docker.io/akinolawilson/t5-small:fc5e18ab
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            httpGet:
+              path: /v2/health/live
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          name: serving-container
+          ports:
+          - containerPort: 8080
+            name: http
+            protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /v2/health/ready
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 10
+    graph:
+      children: []
+      endpoint:
+        type: REST
+      implementation: FC5E18AB_SERVER
+      name: fc5e18ab
+      type: MODEL
+    name: fc5e18ab
+    replicas: 1
+  protocol: v2
