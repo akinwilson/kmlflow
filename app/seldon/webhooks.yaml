@@ -1,0 +1,102 @@
+# # ClusterRoleBinding for the Seldon Webhook
+# apiVersion: rbac.authorization.k8s.io/v1
+# kind: ClusterRoleBinding
+# metadata:
+#   labels:
+#     app: seldon
+#     app.kubernetes.io/instance: seldon-core
+#     app.kubernetes.io/name: seldon-core
+#     app.kubernetes.io/version: v1
+#   name: seldon-webhook-rolebinding-seldon-system
+# roleRef:
+#   apiGroup: rbac.authorization.k8s.io
+#   kind: ClusterRole
+#   name: seldon-webhook-role-seldon-system
+# subjects:
+# - kind: ServiceAccount
+#   name: seldon-manager
+#   namespace: seldon-system
+# ---
+# # Service for Seldon Webhook
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: seldon-webhook-service
+#   namespace: seldon-system
+#   labels:
+#     app: seldon
+#     component: seldon-controller-manager
+# spec:
+#   ports:
+#     - port: 443
+#       targetPort: 443
+#   selector:
+#     app: seldon
+#     component: seldon-controller-manager
+# ---
+# # ClusterRole for the Seldon Webhook
+# apiVersion: rbac.authorization.k8s.io/v1
+# kind: ClusterRole
+# metadata:
+#   labels:
+#     app: seldon
+#     app.kubernetes.io/instance: seldon-core
+#     app.kubernetes.io/name: seldon-core
+#     app.kubernetes.io/version: v1
+#   name: seldon-webhook-role-seldon-system
+# rules:
+# - apiGroups:
+#   - admissionregistration.k8s.io
+#   resources:
+#   - mutatingwebhookconfigurations
+#   - validatingwebhookconfigurations
+#   verbs:
+#   - get
+#   - list
+#   - create
+#   - delete
+#   - update
+# - apiGroups:
+#   - apps
+#   resources:
+#   - deployments/finalizers
+#   verbs:
+#   - get
+#   - patch
+#   - update
+# - apiGroups:
+#   - apiextensions.k8s.io
+#   resources:
+#   - customresourcedefinitions
+#   verbs:
+#   - create
+#   - get
+#   - list
+# - apiGroups:
+#   - apiextensions.k8s.io
+#   resources:
+#   - customresourcedefinitions/finalizers
+#   verbs:
+#   - get
+#   - patch
+#   - update
+# ---
+# apiVersion: admissionregistration.k8s.io/v1
+# kind: MutatingWebhookConfiguration
+# metadata:
+#   name: seldon-mutating-webhook-configuration
+# webhooks:
+#   - name: mseldondeployment.kb.io
+#     admissionReviewVersions: ["v1beta1"]
+#     clientConfig:
+#       service:
+#         name: seldon-webhook-service
+#         namespace: seldon-system
+#         path: /mutate-machinelearning-seldon-io-v1-seldondeployment
+#       caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURHVENDQWdHZ0F3SUJBZ0lVVS9iVjR0UmxDcTEwS0xRRE9uMVd3VFArN3lzd0RRWUpLb1pJaHZjTkFRRUwKQlFBd0hERWFNQmdHQTFVRUF3d1JjMlZzWkc5dUxYZGxZbWh2YjJzdFkyRXdIaGNOTWpVd01qSTFNVEF5TkRRMQpXaGNOTWpZd01qSTFNVEF5TkRRMVdqQWNNUm93R0FZRFZRUUREQkZ6Wld4a2IyNHRkMlZpYUc5dmF5MWpZVENDCkFTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTlp1QURMR05PbHpGYmxKMjVIalhicWsKNzBEeDFQY3orU0plMFVMeWMzbzcreHpqMVZyMlRUMUgrYjlJeG56OXY3MFBkTWV6a0FzWG92ZEJlbFFqUjNsZgpjSU1KVWpoTlpNVkZ0RkhkV3J1SWVoWjdJWXlvVEdlbS9TSUJXL2FoVlZObjdpMUkxVFFOdkFTd2tTS0ZmOFVWCklUb3I0cmk3aEMxb21ubkVCTVowZ2pPNCttK1IzN1BMSmNPQlY3aEo2YnQ3OXFpNzcwV2lVMDFPZXFOa1Y5dmYKa3M4VXhVZENURDZNa0Y0cmdtakM3dmN5bHc3WUt1NCtIbjc4VzVyOVJtSHFZakQwRTJwckxnaFlveEI3K0F6WApIWVd3c3g2T2wxbjk1amtIajF2MUlJbmJST1o4WEF6d0lGYkh4UlAwNCtHYkVNcXptbTREa21YY3NYUmNiTlVDCkF3RUFBYU5UTUZFd0hRWURWUjBPQkJZRUZFTW5QYnlzWUI0NDA5TERKdXZ1a2pNZGZiYmVNQjhHQTFVZEl3UVkKTUJhQUZFTW5QYnlzWUI0NDA5TERKdXZ1a2pNZGZiYmVNQThHQTFVZEV3RUIvd1FGTUFNQkFmOHdEUVlKS29aSQpodmNOQVFFTEJRQURnZ0VCQURIVVBTeC9WOElieU1zWS93SjVKK3V5QWJlWlI0Wk5LWDhBQkJFMWd3Z0QwZXBYCkZXcWFTblo4bDZScnpIM0M5SE1FNjhNWXBOa3pLUkt0SU02L1V6UXQ3VkhYQzhIQmFOdzVaRFhBYk5hZ1Ric1kKc1NYcDBFYXE2V0FEa1JwMEc2VXZ4TWZrdFlTc2RtZDdMOFRmSVNyWitFcVhmMHhQTVZEQi9ZMUJ0WDQxNDZITQpPMzZFdE1PcTVDUG1GMGZKWWdqblNsNEc5N1UxUGxBL2txLysyb3pPSDhhZFdPM0orOUh6cUt3aEVmVTR2OUVYCmQ5enZGWnRmaUZGbHkzOWRqcnlhcGZnWitSYzJDZjRqTVBDb1UyRlJpaW9IckhTTXR2OW1EVllBN1ZCZmowaW4KZDgxZ3B5UnF5dW8wQ1pkQU5FVFZPYnEyMzdzcFllQ1o1VW4ydFhzPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+#     rules:
+#       - apiGroups: ["machinelearning.seldon.io"]
+#         apiVersions: ["v1"]
+#         operations: ["CREATE", "UPDATE"]
+#         resources: ["seldondeployments"]
+#     sideEffects: None
