@@ -9,6 +9,54 @@ from fastapi import FastAPI
 from pydantic import BaseModel, create_model
 from mlflow.models import ModelSignature
 from mlflow.types import Schema, ColSpec
+import uvicorn
+
+
+# prometheus integration 
+from prometheus_client import Counter, Gauge, Histogram, generate_latest, CONTENT_TYPE_LATEST, start_http_server
+from starlette.responses import Response
+from argparse import ArgumentParser
+import time
+import threading
+import psutil
+from psutil._common import bytes2human
+import pynvml 
+
+#################################################################################################
+# promethus monitoring setup 
+#################################################################################################
+# Initialisation time 
+MODEL_LOAD_TIME = Gauge('model_load_time_seconds', 'Time taken to load the model in seconds')
+SERVER_LOAD_TIME = Gauge('server_load_time_seconds', 'Time taken for server to be initialised in seconds')
+# Request Counters
+REQUEST_COUNT = Counter('server_requests_total', 'Total number of inference requests')
+SUCCESSFUL_PREDICTIONS = Counter('server_successful_predictions_total', 'Total number of successful predictions')
+FAILED_PREDICTIONS = Counter('server_failed_predictions_total', 'Total number of failed predictions')
+# Latency Metrics 
+REQUEST_LATENCY = Histogram('server_request_duration_seconds', 'Time spent processing requests')
+INFERENCE_LATENCY = Histogram('server_inference_duration_seconds', 'Time taken by the model to generate predictions')
+# System Resource Metrics 
+CPU_USAGE = Gauge('server_cpu_usage', 'Current CPU utilization percentage')
+MEMORY_USAGE = Gauge('server_memory_usage_gigabytes', 'Current memory usage in gigabytes')
+
+# gpu metric gauges if available 
+no_gpus = torch.cuda.device_count()
+if no_gpus > 0:
+    gpu_usage_dict = {
+        idx: {
+            "GPU_MEMORY_USAGE": Gauge(
+                f'server_gpu_{idx}_memory_usage_gigabytes', 
+                f'GPU {idx} memory usage in gigabytes'
+            ),
+            "GPU_UTILIZATION": Gauge(
+                f'server_gpu_{idx}_utilization', 
+                f'GPU {idx} utilization percentage'
+            )
+        } 
+        for idx in range(1, no_gpus + 1)
+    }
+#################################################################################################
+server_load_start = time.time()
 
 # Set up logging
 logging.basicConfig(
@@ -17,9 +65,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-
 root = Path(__file__).parent 
-
 load_dotenv("api_env")
 title = os.getenv('FASTAPI_TITLE', "T5 Question Answering")
 desc = os.getenv('FASTAPI_DESC', "A FastAPI service for question answering using a fine-tuned T5 model. The model runs on GPU if available.")
@@ -33,6 +79,30 @@ logger.info(f"FASTAPI_VERSION: {version}")
 logger.info(f"MLFLOW_MODEL_URI: {model_uri}")
 logger.info(f"MODEL_VERSION: {model_version}")
 
+# check  if GPU (single gpu at the moment) is available can move model onto do it during inference 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
+logger.info(f"Using device: {device}")
+
+
+
+
+# Initialize NVIDIA GPU monitoring 
+gpu_enabled = False 
+try:
+    logger.info("Attempting to initialise GPU statistics sampler ...")
+    pynvml.nvmlInit()
+    gpu_handle_dict = {idx:pynvml.nvmlDeviceGetHandleByIndex(idx) for idx in range(no_gpus)}
+    gpu_enabled = True 
+    logger.info("Initialised GPU statistics sampler")
+except Exception:
+    print("No GPU detected, GPU metrics will not be available.")
+    pass 
+
+
+
+
+
+
 app = FastAPI(
     title=title,
     description=desc,
@@ -41,6 +111,7 @@ app = FastAPI(
 
 # Load the MLflow model
 model_loaded = False 
+load_start = time.time()
 try:
     logger.info("Loading MLflow model...")
     logger.info(f"Loading from: {model_uri}")
@@ -50,14 +121,10 @@ try:
 except Exception as e:
     logger.error(f"Failed to load MLflow model: {e}")
     raise
+model_load_time = time.time() - load_start
 
 
 
-
-
-# Move model to GPU if available
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-logger.info(f"Using device: {device}")
 
 # Get model signature
 try:
@@ -107,25 +174,71 @@ def create_pydantic_model(name: str, schema: Schema):
 request_model = create_pydantic_model("Request", input_schema)
 response_model = create_pydantic_model("Response", output_schema)
 
+server_load_time = time.time() - server_load_start
+
+
+
+### Periodic System Metrics Update
+def update_metrics():
+    MODEL_LOAD_TIME.set(model_load_time)
+    SERVER_LOAD_TIME.set(server_load_time)
+    while True: 
+        CPU_USAGE.set(psutil.cpu_percent()) # CPU % 
+        MEMORY_USAGE.set(float(bytes2human(psutil.virtual_memory().used)[:-1])) # RAM in bytes 
+        if gpu_enabled:
+            for (idx, handle ) in gpu_handle_dict.items():
+                gpu_util = pynvml.nvmlDeviceGetUtilizationRates(handle).gpu
+                gpu_mem = float(bytes2human(pynvml.nvmlDeviceGetMemoryInfo(handle).used[:-1]))
+                util_dict[idx]['GPU_UTILIZATION'].set(gpu_util)
+                util_dict[idx]['GPU_MEMORY_USAGE'].set(gpu_mem)
+
+        time.sleep(10)
+# Start background thread for metrics update 
+threading.Thread(target=update_metrics, daemon=True).start() 
+
+
+@app.get("/metrics") 
+def metrics():
+    '''
+    prometheus metrics reporting 
+    '''
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+    
+
 
 @app.post(f"/v2/models/{model_version}/infer", response_model=response_model, summary="Get response to a request")
 def predict(request: request_model):
     """
     The model runs on GPU if available for faster inference.
     """
+    REQUEST_COUNT.inc() # Increment request counter 
+    start_time = time.time() # Start request timer
+
     try:
+        inference_start_time = time.time() 
         answer = model.predict(request.dict())  # Use request.dict() to convert Pydantic model to dict
+        inference_duration = time.time() - inference_start_time
+        
+        INFERENCE_LATENCY.observe(inference_duration) # Log inference time 
+        SUCCESSFUL_PREDICTIONS.inc() 
+
         logger.info("Prediction completed successfully.")
         logger.info(f"{answer=}")
+
         # Application-specific - need to parameterise the returned json to match the response model 
         # WITHOUT needing to explicitly mention the key name; answer 
         ###############################################################################################
         return {"answer":answer}
         ###############################################################################################
     except Exception as e:
+        FAILED_PREDICTIONS.inc()
         logger.error(f"Prediction failed: {e}")
         raise
 
+    finally:
+        request_duration = time.time() - start_time
+        REQUEST_LATENCY.observe(request_duration) # Log request duration return response 
+        
 
 @app.get("/", summary="Root")
 def root():
@@ -154,3 +267,16 @@ def ready():
     """
     logger.info("health check called")
     return {"message": f"{title} API is running. Visit /docs for Swagger UI."}
+
+
+if __name__ == "__main__":
+    
+    parser = ArgumentParser()
+    parser.add_argument("--prometheus-port", type=int, default=6000,  help="Port to help Prometheus client push inference metrics")
+    parser.add_argument("--serving-port",type=int, default=9000, help="Port to help Prometheus client push inference metrics")
+    args = parser.parse_args()
+
+    
+    start_http_server(args.prometheus_port) 
+    # Start FastAPI model server on port 8080 
+    uvicorn.run(app, host="0.0.0.0", port=args.serving_port)

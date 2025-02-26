@@ -320,13 +320,13 @@ if __name__=="__main__":
                 raise ValueError("Docker credentials not found in environment variables.")
 
             # using local docker client to publish image to remote registry
-            image_name = f'{os.getenv("DOCKER_USERNAME", "akinolawilson")}/{full_model_name}:{run_id[:8]}'
+            image_name = f'{os.getenv("DOCKER_USERNAME", "akinolawilson")}/{full_model_name}:{run_id[-8:]}'
 
             # api environment variables.
             api_env=f"""
             FASTAPI_TITLE={args.fast_api_title}
             FASTAPI_DESC={args.experiment_description}
-            FASTAPI_VERSION={run_id[:8]}
+            FASTAPI_VERSION={run_id[-8:]}
             MLFLOW_MODEL_URI={model_uri}
             AWS_ACCESS_KEY_ID={os.getenv("AWS_ACCESS_KEY_ID","minioaccesskey")}
             AWS_SECRET_ACCESS_KEY={os.getenv("AWS_SECRET_ACCESS_KEY","miniosecretkey123")}
@@ -340,17 +340,26 @@ if __name__=="__main__":
             with open( root / "api_env", "w") as f:
                 f.write(api_env)
 
+
+            
+
             # serving container Dockerfile string 
+            # if we want GPU access, it would be better to use a GPU-enable container. 
+            # the nvidia triton server would be a good option for a serving container 
+
+            # image uri: nvcr.io/nvidia/tritonserver:21.08-py3
+
+            
             dockerfile_content = f"""
             FROM python:{".".join(sys.version.split(" ")[0].split(".")[:-1])} 
             WORKDIR /usr/src/app
 
-            RUN pip install fastapi pydantic uvicorn mlflow torch transformers python-dotenv sentencepiece boto3
+            RUN pip install fastapi pydantic uvicorn mlflow torch transformers python-dotenv sentencepiece boto3 pynvml psutil prometheus_client
             COPY api.py .
             COPY api_env .
             COPY api_examples.json .
-            
-            CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8080"]
+            EXPOSE 6000/tcp # prometheus 
+            CMD ["python3", "/usr/src/app/api.py", "--prometheus-port", "6000", "--serving-port", "9000"]
             """
 
             with open(root / "Dockerfile", "w") as f:
@@ -369,7 +378,7 @@ if __name__=="__main__":
             subprocess.run(f"rm {root / 'api_examples.json'}", shell=True, check=True,stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             subprocess.run(f"rm {root / 'api_env'}", shell=True, check=True,stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             logger.info(f"Finished cleaning up serving image construction artifacts")
-
+            # setting tags in MLFLow server related to image once the pushing has been completed
             logger.info(f"Setting tags in MLFlow related to image URI ... ")
             mlflow.set_tag("serving_container", image_name)
             mlflow.set_tag("local_inference", f"docker run --network host --rm {image_name}")
@@ -378,6 +387,7 @@ if __name__=="__main__":
             logger.info("Finished! - setting MLFlow status run to FINISHED")
             mlflow.end_run(status="FINISHED")  
             sys.exit(0) 
+
         logger.info(f"Finished! - setting MLFlow status run to FINISHED")
         mlflow.end_run(status="FINISHED")  
         sys.exit(0) 

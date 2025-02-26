@@ -119,12 +119,12 @@ with mlflow.start_run(experiment_id=experiment.experiment_id, description=run_de
 
     if PUBLISH:
         # using local docker client to publish image to remote registry
-        image_name = f"{os.getenv("DOCKER_USERNAME", "akinolawilson")}/{model_name}:{run_id[:8]}"
+        image_name = f"{os.getenv("DOCKER_USERNAME", "akinolawilson")}/{model_name}:{run_id[-8:]}"
         # api environment variables.
         api_env=f"""
         FASTAPI_TITLE={title}
         FASTAPI_DESC={experiment_description}
-        FASTAPI_VERSION={run_id[:8]}
+        FASTAPI_VERSION={run_id[-8:]}
         MLFLOW_MODEL_URI={model_uri}
         AWS_ACCESS_KEY_ID={os.getenv("AWS_ACCESS_KEY_ID","minioaccesskey")}
         AWS_SECRET_ACCESS_KEY={os.getenv("AWS_SECRET_ACCESS_KEY","miniosecretkey123")}
@@ -142,13 +142,12 @@ with mlflow.start_run(experiment_id=experiment.experiment_id, description=run_de
         dockerfile_content = f"""
         FROM python:{".".join(sys.version.split(" ")[0].split(".")[:-1])} 
         WORKDIR /usr/src/app
-
-        RUN pip install fastapi pydantic uvicorn mlflow torch transformers python-dotenv sentencepiece boto3
+        RUN pip install fastapi pydantic uvicorn mlflow torch transformers python-dotenv sentencepiece boto3 pynvml psutil prometheus_client
         COPY api.py .
         COPY api_env .
         COPY api_examples.json .
-        
-        CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8080"]
+        EXPOSE 6000/tcp
+        CMD ["python3", "/usr/src/app/api.py", "--prometheus-port", "6000", "--serving-port", "9000"]
         """
 
         with open(root / "Dockerfile", "w") as f:
