@@ -184,7 +184,7 @@ def update_metrics():
     SERVER_LOAD_TIME.set(server_load_time)
     while True: 
         CPU_USAGE.set(psutil.cpu_percent()) # CPU % 
-        MEMORY_USAGE.set(float(bytes2human(psutil.virtual_memory().used)[:-1])) # RAM in bytes 
+        MEMORY_USAGE.set(float(bytes2human(psutil.virtual_memory().used)[:-1])) # RAM in gigabytes 
         if gpu_enabled:
             for (idx, handle ) in gpu_handle_dict.items():
                 gpu_util = pynvml.nvmlDeviceGetUtilizationRates(handle).gpu
