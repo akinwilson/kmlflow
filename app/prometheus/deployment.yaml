@@ -36,9 +36,42 @@ data:
       scrape_interval: 15s
 
     scrape_configs:
+      - job_name: 'seldon-models'
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names:
+                - models
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_name]
+            action: keep
+            regex: seldon-models-b749de58-b749de58  # <--- Use the correct service name!
+          - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
+            action: keep
+            regex: true
+          - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_port]
+            action: replace
+            target_label: __address__
+            regex: (.+)
       - job_name: 'prometheus'
         static_configs:
           - targets: ['localhost:9090']
+
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: prometheus-config
+#   namespace: monitoring
+# data:
+#   prometheus.yml: |
+#     global:
+#       scrape_interval: 15s
+
+#     scrape_configs:
 
 # apiVersion: v1
 # kind: ConfigMap

@@ -1,21 +1,21 @@
-apiVersion: machinelearning.seldon.io/v1
-kind: SeldonDeployment
-metadata:
-  name: test-server-alone
-  namespace: models
-spec:
-  protocol: v2
-  predictors:
-  - name: default
-    replicas: 1
-    graph:
-      name: fc5e18ab
-      implementation: FC5E18AB_SERVER
-      # modelUri: s3://mlflow-artifacts/4/fc5e18abdf1840bcb622a0fc77617f28/artifacts/t5_qa_model
-    svcOrchSpec:
-      env:
-      - name: SELDON_LOG_LEVEL
-        value: DEBUG
+# apiVersion: machinelearning.seldon.io/v1
+# kind: SeldonDeployment
+# metadata:
+#   name: test-server-alone
+#   namespace: models
+# spec:
+#   protocol: v2
+#   predictors:
+#   - name: default
+#     replicas: 1
+#     graph:
+#       name: fc5e18ab
+#       implementation: FC5E18AB_SERVER
+#       # modelUri: s3://mlflow-artifacts/4/fc5e18abdf1840bcb622a0fc77617f28/artifacts/t5_qa_model
+#     svcOrchSpec:
+#       env:
+#       - name: SELDON_LOG_LEVEL
+#         value: DEBUG
 
 # apiVersion: machinelearning.seldon.io/v1
 # kind: SeldonDeployment

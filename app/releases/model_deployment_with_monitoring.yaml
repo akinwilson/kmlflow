@@ -7,7 +7,7 @@ metadata:
     release: prometheus
 spec:
   endpoints:
-    - port: http
+    - port: http  # ✅ Match the actual port name in the service
       path: /metrics
       interval: 10s
   namespaceSelector:
@@ -15,7 +15,24 @@ spec:
       - models
   selector:
     matchLabels:
-      app: seldon-models
+      seldon-deployment-id: seldon-models
+
+---
+## pod monitorer 
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: seldon-model-monitor
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      seldon-deployment-id: seldon-models
+  podMetricsEndpoints:
+    - port: "metrics"
+      path: /metrics
+  namespaceSelector:
+    any: true
 ---
 apiVersion: machinelearning.seldon.io/v1
 kind: SeldonDeployment
@@ -24,73 +41,222 @@ metadata:
   namespace: models
   annotations:
     seldon.io/no-storage-initializer: "true"
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "6000"
 spec:
   protocol: v2
   predictors:
-    - name: fc5e18ab
+    - name: b749de58
       replicas: 1
       graph:
-        name: fc5e18ab
+        name: b749de58
         type: MODEL
         children: []
-      endpoint:
-        type: REST
-        implementation: FC5E18AB_SERVER
+        implementation: B749DE58_SERVER
+
       svcOrchSpec:
         env:
           - name: LOG_LEVEL
             value: DEBUG
-        readinessProbe:
-          httpGet:
-            path: /v2/health/ready
-            port: 8080
-          initialDelaySeconds: 20
-          periodSeconds: 10
-        livenessProbe:
-          httpGet:
-            path: /v2/health/live
-            port: 8080
-          initialDelaySeconds: 20
-          periodSeconds: 10
-      metrics:
-        # -- initialisations ---
-        - type: GAUGE
-          key: model_load_time_seconds
-          help: "Time taken to load the model in seconds"
-        - type: GAUGE
-          key:  server_load_time_seconds
-          help: "Time taken for server to be initialised in seconds"
-        # --- Request Counters ---
-        - type: COUNTER
-          key: server_requests_total
-          help: "Total number of inference requests received"
-        - type: COUNTER
-          key: server_successful_predictions_total
-          help: "Total number of successful predictions"
-        - type: COUNTER
-          key: server_failed_predictions_total
-          help: "Total number of failed predictions"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+            nvidia.com/gpu: "1"
+          limits:
+            memory: "1Gi"
+            cpu: "1"
+            nvidia.com/gpu: "1"
+
+      componentSpecs:
+        - spec:
+            containers:
+              - name: b749de58
+                livenessProbe:
+                  httpGet:
+                    path: /v2/health/live
+                    port: 9000
+                  initialDelaySeconds: 20
+                  periodSeconds: 10
+                readinessProbe:
+                  httpGet:
+                    path: /v2/health/ready
+                    port: 9000
+                  initialDelaySeconds: 20
+                  periodSeconds: 10
+                ports:
+                  - name: metrics
+                    containerPort: 6000
+                    protocol: TCP
+
+      # metrics:  # Move metrics inside graph
+      #   - type: GAUGE
+      #     key: model_load_time_seconds
+      #     help: "Time taken to load the model in seconds"
+      #   - type: GAUGE
+      #     key: server_load_time_seconds
+      #     help: "Time taken for server to be initialised in seconds"
+      #   - type: COUNTER
+      #     key: server_requests_total
+      #     help: "Total number of inference requests received"
+      #   - type: COUNTER
+      #     key: server_successful_predictions_total
+      #     help: "Total number of successful predictions"
+      #   - type: COUNTER
+      #     key: server_failed_predictions_total
+      #     help: "Total number of failed predictions"
+      #   - type: HISTOGRAM
+      #     key: server_request_duration_seconds
+      #     help: "Request processing duration in seconds"
+      #   - type: HISTOGRAM
+      #     key: server_inference_duration_seconds
+      #     help: "Time taken by the model to generate predictions"
+      #   - type: GAUGE
+      #     key: server_cpu_usage
+      #     help: "Current CPU utilization percentage"
+      #   - type: GAUGE
+      #     key: server_memory_usage_gigabytes
+      #     help: "Current memory usage in gigabytes"
+      #   - type: GAUGE
+      #     key: server_gpu_utilization
+      #     help: "GPU utilization percentage"
+      #   - type: GAUGE
+      #     key: server_gpu_memory_usage_gigabytes
+      #     help: "GPU memory usage in gigabytes"
+
+      # svcOrchSpec:
+      #   env:
+      #     - name: LOG_LEVEL
+      #       value: DEBUG
+      #   resources:
+      #     requests:
+      #       memory: "512Mi"
+      #       cpu: "500m"
+      #     limits:
+      #       memory: "1Gi"
+      #       cpu: "1"
+
+# apiVersion: monitoring.coreos.com/v1
+# kind: ServiceMonitor
+# metadata:
+#   name: seldon-model-monitor
+#   namespace: monitoring 
+#   labels:
+#     release: prometheus
+# spec:
+#   endpoints:
+#     - port: http
+#       path: /metrics
+#       interval: 10s
+#   namespaceSelector:
+#     matchNames:
+#       - models
+#   selector:
+#     matchLabels:
+#       app: seldon-models
+# ---
+# apiVersion: machinelearning.seldon.io/v1
+# kind: SeldonDeployment
+# metadata:
+#   name: seldon-models
+#   namespace: models
+#   annotations:
+#     seldon.io/no-storage-initializer: "true"
+# spec:
+#   protocol: v2
+#   predictors:
+#     - name: fb8b0d2d
+#       replicas: 1
+#       graph:
+#         name: fb8b0d2d
+#         type: MODEL
+#         children: []
+#         implementation: FB8B0D2D_SERVER
+#       svcOrchSpec:
+#         env:
+#           - name: LOG_LEVEL
+#             value: DEBUG
+#         resources:  # Add resource requests/limits if needed
+#           requests:
+#             memory: "512Mi"
+#             cpu: "500m"
+#           limits:
+#             memory: "1Gi"
+#             cpu: "1"
+
+#       componentSpecs:
+#         - spec:
+#             containers:
+#               - name: fb8b0d2d
+#                 livenessProbe:
+#                   httpGet:
+#                     path: /v2/health/live
+#                     port: 8080
+#                   initialDelaySeconds: 20
+#                   periodSeconds: 10
+#                 readinessProbe:
+#                   httpGet:
+#                     path: /v2/health/ready
+#                     port: 8080
+#                   initialDelaySeconds: 20
+#                   periodSeconds: 10
+
+#       # svcOrchSpec:
+#       #   env:
+#       #     - name: LOG_LEVEL
+#       #       value: DEBUG
+#       #   readinessProbe:
+#       #     httpGet:
+#       #       path: /v2/health/ready
+#       #       port: 8080
+#       #     initialDelaySeconds: 20
+#       #     periodSeconds: 10
+#       #   livenessProbe:
+#       #     httpGet:
+#       #       path: /v2/health/live
+#       #       port: 8080
+#       #     initialDelaySeconds: 20
+#       #     periodSeconds: 10
+#       metrics:
+#         # -- initialisations ---
+#         - type: GAUGE
+#           key: model_load_time_seconds
+#           help: "Time taken to load the model in seconds"
+#         - type: GAUGE
+#           key:  server_load_time_seconds
+#           help: "Time taken for server to be initialised in seconds"
+#         # --- Request Counters ---
+#         - type: COUNTER
+#           key: server_requests_total
+#           help: "Total number of inference requests received"
+#         - type: COUNTER
+#           key: server_successful_predictions_total
+#           help: "Total number of successful predictions"
+#         - type: COUNTER
+#           key: server_failed_predictions_total
+#           help: "Total number of failed predictions"
         
-        # --- Latency Metrics ---
-        - type: HISTOGRAM
-          key: server_request_duration_seconds
-          help: "Request processing duration in seconds"
-        - type: HISTOGRAM
-          key: server_inference_duration_seconds
-          help: "Time taken by the model to generate predictions"
+#         # --- Latency Metrics ---
+#         - type: HISTOGRAM
+#           key: server_request_duration_seconds
+#           help: "Request processing duration in seconds"
+#         - type: HISTOGRAM
+#           key: server_inference_duration_seconds
+#           help: "Time taken by the model to generate predictions"
         
-        # --- CPU and Memory Metrics ---
-        - type: GAUGE
-          key: server_cpu_usage
-          help: "Current CPU utilization percentage"
-        - type: GAUGE
-          key: server_memory_usage_gigabytes
-          help: "Current memory usage in gigabytes"
+#         # --- CPU and Memory Metrics ---
+#         - type: GAUGE
+#           key: server_cpu_usage
+#           help: "Current CPU utilization percentage"
+#         - type: GAUGE
+#           key: server_memory_usage_gigabytes
+#           help: "Current memory usage in gigabytes"
         
-        # --- GPU Metrics ---
-        - type: GAUGE
-          key: server_gpu_utilization
-          help: "GPU utilization percentage"
-        - type: GAUGE
-          key: server_gpu_memory_usage_gigabytes
-          help: "GPU memory usage in gigabytes"
+#         # --- GPU Metrics ---
+#         - type: GAUGE
+#           key: server_gpu_utilization
+#           help: "GPU utilization percentage"
+#         - type: GAUGE
+#           key: server_gpu_memory_usage_gigabytes
+#           help: "GPU memory usage in gigabytes"
