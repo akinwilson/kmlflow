@@ -1,0 +1,96 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: seldon-model-monitor
+  namespace: monitoring 
+  labels:
+    release: prometheus
+spec:
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 10s
+  namespaceSelector:
+    matchNames:
+      - models
+  selector:
+    matchLabels:
+      app: seldon-models
+---
+apiVersion: machinelearning.seldon.io/v1
+kind: SeldonDeployment
+metadata:
+  name: seldon-models
+  namespace: models
+  annotations:
+    seldon.io/no-storage-initializer: "true"
+spec:
+  protocol: v2
+  predictors:
+    - name: fc5e18ab
+      replicas: 1
+      graph:
+        name: fc5e18ab
+        type: MODEL
+        children: []
+      endpoint:
+        type: REST
+        implementation: FC5E18AB_SERVER
+      svcOrchSpec:
+        env:
+          - name: LOG_LEVEL
+            value: DEBUG
+        readinessProbe:
+          httpGet:
+            path: /v2/health/ready
+            port: 8080
+          initialDelaySeconds: 20
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /v2/health/live
+            port: 8080
+          initialDelaySeconds: 20
+          periodSeconds: 10
+      metrics:
+        # -- initialisations ---
+        - type: GAUGE
+          key: model_load_time_seconds
+          help: "Time taken to load the model in seconds"
+        - type: GAUGE
+          key:  server_load_time_seconds
+          help: "Time taken for server to be initialised in seconds"
+        # --- Request Counters ---
+        - type: COUNTER
+          key: server_requests_total
+          help: "Total number of inference requests received"
+        - type: COUNTER
+          key: server_successful_predictions_total
+          help: "Total number of successful predictions"
+        - type: COUNTER
+          key: server_failed_predictions_total
+          help: "Total number of failed predictions"
+        
+        # --- Latency Metrics ---
+        - type: HISTOGRAM
+          key: server_request_duration_seconds
+          help: "Request processing duration in seconds"
+        - type: HISTOGRAM
+          key: server_inference_duration_seconds
+          help: "Time taken by the model to generate predictions"
+        
+        # --- CPU and Memory Metrics ---
+        - type: GAUGE
+          key: server_cpu_usage
+          help: "Current CPU utilization percentage"
+        - type: GAUGE
+          key: server_memory_usage_gigabytes
+          help: "Current memory usage in gigabytes"
+        
+        # --- GPU Metrics ---
+        - type: GAUGE
+          key: server_gpu_utilization
+          help: "GPU utilization percentage"
+        - type: GAUGE
+          key: server_gpu_memory_usage_gigabytes
+          help: "GPU memory usage in gigabytes"

@@ -39,6 +39,13 @@ Along with the model registry, experiment tracking and artifact serving service 
 
 To monitor system-wide resources and services, visit the [cluster-wide dashboard UI](https://192.168.49.2/dashboard/#); you will need the access token for this; see CLI output.
 
+
+To view Grafana, visit the [Grafana UI](https://192.168.49.2/grafana/), the `username` and `password` are `admin` and `admin` respectively.  
+
+
+To view Prometheus, visit the [Prometheus UI](https://192.168.49.2/prometheus/)
+
+
 The object/artifact store deployed as a drop-in replacement for s3 (MinIO) can be viewed through 
 [MLFlow Artifact bucket UI](http://192.168.49.2/minio/browser/mlflow-artifacts) and [Fitting data bucket UI](http://192.168.49.2/minio/browser/data). You may be prompted to login to the artifact UIs, the credentials are 
 ```
@@ -138,20 +145,17 @@ usage: fit.py [-h] [--vocab-size VOCAB_SIZE] [--d-model D_MODEL] [--d-kv D_KV]
 ## To do Feb 20 2025
 
 
-- [ ] Deploy model to cluster using Seldon Core and ArgoCD. Demonstrate how ArgoCD provides a GitOps aligned approach to model deployments. Make sure to integrate the model monitoring with Prometheus and have the in-field model performance shown in a grafana dashboard. 
-
+- [ ] configure github actions and webhooks to automate model releasing and retracting. This leads onto the customising the MLFlow UI.   
 
 - [ ] Customise the MLFlow server to allow for deployments via registering the model registry UI. Given a  serving image uri, let users deploy a model using either one of the strategies; single deployment, A/B testing,  canary, blue-green or shadow deployment. This should work via the UI triggering a webhook to update to the github repository which ArgoCD is watching, providing a serving image URI to be deployed. 
+
 
 - [ ] Fix landing page of MinIO. Currently, need to programmatically create the bucket during the deployment of the cluster. When logging into the minio service, you're supposed to be redirect to the web UI for all buckets, but a blank screen appears instead. Buckets can only be viewed via a direct URL, and created programmatically like in the `./app/deploy.sh` script. Need to configure `./app/minio/deployment.yaml` to ingress objects to correctly redirect to the land page of MiniIO after after logging into. i.e 
 `https://192.168.49.2/minio/login` should redirect correctly to `http://192.168.49.2/minio/browser` but this is currently a blank screen.
 
 Rather than using a **path-based ingress** for MinIO, it needs to be change to a **host-based ingress**, such that MinIO can be served from the root / , as the application handle path-based ingresses well. 
 
-Need to fix this to make `grafana`'s UI available. Currently, the /grafana path is redirected to the minio landing page. due to the ingress rule the the minio server has 
 
-
-- [ ] Once minio has been had its ingress changed from path-based to host-based, make sure the UIs for `grafana` and `prometheus` work and to allow seldom deployments to be tracked and monitored via Prometheus, visualised via Grafana. 
 
 
 
