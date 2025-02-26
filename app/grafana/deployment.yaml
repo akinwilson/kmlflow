@@ -65,6 +65,14 @@ spec:
             runAsUser: 0   ### 
           ports:
             - containerPort: 3000
+          env:
+            - name: GF_SERVER_ROOT_URL
+              value: "http://192.168.49.2/grafana/"
+            - name: GF_SERVER_SERVE_FROM_SUB_PATH
+              value: "true"
+            - name: GF_SECURITY_ALLOW_EMBEDDING
+              value: "true"
+              
           volumeMounts:
             - mountPath: /var/lib/grafana
               name: grafana-storage
@@ -94,7 +102,7 @@ metadata:
   name: grafana-ingress
   namespace: monitoring
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/rewrite-target: /grafana/$2
     nginx.ingress.kubernetes.io/use-regex: "true" # enable regex for path matching
 spec:
   ingressClassName: nginx
