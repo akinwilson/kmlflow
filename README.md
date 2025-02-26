@@ -1,14 +1,14 @@
-# kmlflow
+# Kmlflow
 
 ![](img/kflow.jpg 'locally-kubeflow')
 
 ## Overview 
 
-kmlflow is a experiment tracking, hyperparameter optimisation and model registry framework that allows end users to deploy a [Katib](https://www.kubeflow.org/docs/components/katib/overview/); the [hyperparameter optimisation](https://en.wikipedia.org/wiki/Hyperparameter_optimization) and experiment tracking framework, [MLFlow](https://mlflow.org/) used as a model registry, artifact store and tracking tool complemented by [MinIO](https://min.io/) used as the object store for the MLFlow server. In addition to these services, [ArgoCD](https://argo-cd.readthedocs.io/en/stable/) and [Seldon Core](https://docs.seldon.io/projects/seldon-core/en/latest/index.html) are deployed to allow for a GitOps orientated model deployment workflow and extensive serving strategy options via each component respectively. To monitor models deployed to the cluster serving requests, [Grafana](https://grafana.com/) and [Prometheus](https://prometheus.io/docs/introduction/overview/) are deployed, where Seldon Core naturally integrates with Prometheus and Grafana allows for insight into the serving endpoints hosted through Seldon Core via Prometheus through default and custom model monitoring-specific dashboards. A [cluster-wide dashboard](https://github.com/kubernetes/dashboard) is to deployed to provide real-time observability over the entire system. 
+Kmlflow or also known as **K5W** is and end to end Machine Learning Operations platform. It is a platform that provides an experiment tracking, hyperparameter optimisation and model registry framework, which allows end users to deploy models via a gitops-orientated workflow to the platform using a variety of deployment strategies, entirely automated following the fhe training of a model. The microservices making up the platform are [Katib](https://www.kubeflow.org/docs/components/katib/overview/); the [hyperparameter optimisation](https://en.wikipedia.org/wiki/Hyperparameter_optimization) tracking framework, [MLFlow](https://mlflow.org/) used as a model registry, artifact store and experiment tracking service and deployment management tool, complemented by [MinIO](https://min.io/) used as the object store for the MLFlow server and general persistence. In addition to these services, [ArgoCD](https://argo-cd.readthedocs.io/en/stable/) and [Seldon Core](https://docs.seldon.io/projects/seldon-core/en/latest/index.html) are deployed to allow for a [GitOps](https://about.gitlab.com/topics/gitops/)-orientated model deployment workflow and extensive serving strategy frameworks. To monitor models deployed to the cluster, [Grafana](https://grafana.com/) and [Prometheus](https://prometheus.io/docs/introduction/overview/). A [cluster-wide dashboard](https://github.com/kubernetes/dashboard) is to deployed to provide real-time observability over the entire system and finally a centralised UI, [Kmlflow](https://192.168.49.2/kmlflow), to make the platform user-friendly.  
 
-The tools used to achieve the deployment of these services as a unified platform are [Docker](https://www.docker.com/), [Minikube](https://minikube.sigs.k8s.io/docs/) and [Kubectl](https://kubernetes.io/docs/reference/kubectl/). 
+The main tools used to achieve the deployment of the platform are [Docker](https://www.docker.com/), [Minikube](https://minikube.sigs.k8s.io/docs/) and [Kubectl](https://kubernetes.io/docs/reference/kubectl/). 
 
-In addition to the infrastructure and application deployment, the `/examples` folder demonstrates how to use clients for MLFlow and Katib in order to make use of these services. 
+In addition to the infrastructure and microservices deployment, the `/examples` folder demonstrates how to use K5W as a platform, programmatically via clients to its microservices like MLFlow. Katib, Prometheus etc, and through the [K5W UI](https://192.168.49.2/kmlflow).
 
 
 ## Installation
@@ -149,6 +149,7 @@ usage: fit.py [-h] [--vocab-size VOCAB_SIZE] [--d-model D_MODEL] [--d-kv D_KV]
 
 - [ ] Customise the MLFlow server to allow for deployments via registering the model registry UI. Given a  serving image uri, let users deploy a model using either one of the strategies; single deployment, A/B testing,  canary, blue-green or shadow deployment. This should work via the UI triggering a webhook to update to the github repository which ArgoCD is watching, providing a serving image URI to be deployed. 
 
+- [ ] Consider deployment of [Harbor](https://goharbor.io/) for private remote image management. 
 
 - [ ] Fix landing page of MinIO. Currently, need to programmatically create the bucket during the deployment of the cluster. When logging into the minio service, you're supposed to be redirect to the web UI for all buckets, but a blank screen appears instead. Buckets can only be viewed via a direct URL, and created programmatically like in the `./app/deploy.sh` script. Need to configure `./app/minio/deployment.yaml` to ingress objects to correctly redirect to the land page of MiniIO after after logging into. i.e 
 `https://192.168.49.2/minio/login` should redirect correctly to `http://192.168.49.2/minio/browser` but this is currently a blank screen.

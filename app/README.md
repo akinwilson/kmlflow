@@ -95,25 +95,25 @@ http://192.168.49.2/minio/browser/mlflow-artifacts
 ```
 These values are set inside of the `/minio` `deployment.yaml`.
 
-## Docker: useful image testing command 
+### Docker: useful image testing command 
 Run latest built docker image on host network 
 ```bash
 docker run --network host --rm $(docker images | head -n 2 | awk 'FNR == 2 {print $1":"$2}')
 ```
 
-## YAML in-line processing 
+### YAML in-line processing 
 ```bash 
 curl -s https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml | \
 yq eval '(select(.kind == "Deployment" and .metadata.name == "argocd-server").spec.template.spec.containers[0].args) += ["--rootpath=/argo"]' - | \
 kubectl apply -f -
 ```
 
-## Certificate manager for seldon core deployment
+### Certificate manager for seldon core deployment
 ```bash
 kubectl apply -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml
 ```
 
-## Helpful K8S commands
+### Helpful K8S commands
 
 ```bash 
 /tmp/k8s-webhook-server/serving-certs/tls.crt
@@ -138,7 +138,13 @@ kubectl create secret tls seldon-webhook-server-cert \
   --key=ca.key \
   -n seldon-system
 ```
-decode certicate 
+decode certificate 
 ```bash
 cat ca.crt | base64 -w 0
+```
+
+### Build, push, redeploy UI
+
+```bash 
+docker build . -f docker/Dockerfile.ui -t akinolawilson/kmlflow-ui:latest && docker push akinolawilson/kmlflow-ui:latest && kubectl delete -f ui/deployment.yaml && k apply -f ui/deployment.yaml
 ```
