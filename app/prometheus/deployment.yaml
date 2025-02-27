@@ -38,25 +38,37 @@ data:
     scrape_configs:
       - job_name: 'seldon-models'
         kubernetes_sd_configs:
-          - role: endpoints
+          - role: pod # Changed to scrape pods directly
             namespaces:
               names:
-                - models
+                - models # Target namespace
         relabel_configs:
-          - source_labels: [__meta_kubernetes_service_name]
+          # Keep only pods with scrape annotation
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
             action: keep
-            regex: seldon-models-b749de58-b749de58  # <--- Use the correct service name!
-          - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
-            action: keep
-            regex: true
-          - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
+            regex: "true"
+          
+          # Set metrics path from annotation
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
             action: replace
             target_label: __metrics_path__
             regex: (.+)
-          - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_port]
+          
+          # Set scrape address (IP:port) using pod IP and annotation
+          - source_labels: [__meta_kubernetes_pod_ip, __meta_kubernetes_pod_annotation_prometheus_io_port]
             action: replace
+            regex: (.+);(.+)
+            replacement: $1:$2
             target_label: __address__
-            regex: (.+)
+          
+          # Add useful labels
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            target_label: service
+
       - job_name: 'prometheus'
         static_configs:
           - targets: ['localhost:9090']
