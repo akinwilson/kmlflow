@@ -3,12 +3,12 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
 metadata:
-  name: model-{{ model_name }}-monitor
+  name: model-54d99452-monitor
   namespace: monitoring
 spec:
   selector:
     matchLabels:
-      seldon-deployment-id: model-{{ model_name }}
+      seldon-deployment-id: model-54d99452
   podMetricsEndpoints:
     - port: "http"  # Match the container port name
       path: /metrics
@@ -19,7 +19,7 @@ spec:
 apiVersion: machinelearning.seldon.io/v1
 kind: SeldonDeployment
 metadata:
-  name: model-{{ model_name }}
+  name: model-54d99452
   namespace: models
   annotations:
     seldon.io/no-storage-initializer: "true"
@@ -29,26 +29,26 @@ metadata:
 spec:
   protocol: v2
   predictors:
-    - name: predictor-{{ model_name }}
+    - name: predictor-54d99452
       replicas: 1
       graph:
-        name: model-{{ model_name }}
+        name: model-54d99452
         type: MODEL
         children: []
-        implementation: {{ model_name.upper() }}_SERVER
+        implementation: 54D99452_SERVER
       svcOrchSpec:
         env:
           - name: LOG_LEVEL
             value: DEBUG
           - name: ROOT_PATH
-            value: "/{{ model_name }}"
+            value: "/54d99452"
       componentSpecs:
         - spec:
             containers:
-              - name: model-{{ model_name }}
+              - name: model-54d99452
                 env:
                   - name: ROOT_PATH
-                    value: "/{{ model_name }}"
+                    value: "/54d99452"
                 livenessProbe:
                   httpGet:
                     path: /v2/health/live
@@ -78,34 +78,35 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: model-{{ model_name }}-docs-ingress
+  name: model-54d99452-docs-ingress
   namespace: models
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"  # Enable regex matching
-    nginx.ingress.kubernetes.io/rewrite-target: /{{ model_name }}/docs$2
+    nginx.ingress.kubernetes.io/rewrite-target: /54d99452/docs$2
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/x-forwarded-prefix: /54d99452
 spec:
   ingressClassName: nginx
   rules:
     - http:
         paths:
           # API Documentation Endpoint
-          - path: /{{ model_name }}/docs(/|$)(.*)
+          - path: /54d99452/docs(/|$)(.*)
             pathType: ImplementationSpecific
             backend:
               service:
-                name: model-{{ model_name }}-predictor-{{ model_name }}-model-{{ model_name }} # seldon-models-model-{{ model_name }} ### model-{{ model_name }}-predictor-{{ model_name }}-model-{{ model_name }}
+                name: model-54d99452-predictor-54d99452-model-54d99452 # seldon-models-model-54d99452 ### model-54d99452-predictor-54d99452-model-54d99452
                 port:
                   number: 9000
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: model-{{ model_name }}-api-ingress
+  name: model-54d99452-api-ingress
   namespace: models
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"  # Enable regex matching
-    nginx.ingress.kubernetes.io/rewrite-target: /{{ model_name }}/v2/models/$1/infer
+    nginx.ingress.kubernetes.io/rewrite-target: /54d99452/v2/models/$1/infer
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
 spec:
   ingressClassName: nginx
@@ -113,10 +114,10 @@ spec:
     - http:
         paths:
           # Prediction Endpoint
-          - path: /{{ model_name }}(/|$)(.*)
+          - path: /54d99452(/|$)(.*)
             pathType: ImplementationSpecific
             backend:
               service:
-                name: model-{{ model_name }}-predictor-{{ model_name }}-model-{{ model_name }}  # seldon-models-model-{{ model_name }} ### model-{{ model_name }}-predictor-{{ model_name }}-model-{{ model_name }}
+                name: model-54d99452-predictor-54d99452-model-54d99452  # seldon-models-model-54d99452 ### model-54d99452-predictor-54d99452-model-54d99452
                 port:
                   number: 9000
