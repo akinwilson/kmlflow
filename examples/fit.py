@@ -358,8 +358,7 @@ if __name__=="__main__":
             COPY api.py .
             COPY api_env .
             COPY api_examples.json .
-            EXPOSE 6000/tcp # prometheus 
-            CMD ["python3", "/usr/src/app/api.py", "--prometheus-port", "6000", "--serving-port", "9000"]
+            CMD ["python3", "/usr/src/app/api.py", "--serving-port", "9000"]
             """
 
             with open(root / "Dockerfile", "w") as f:

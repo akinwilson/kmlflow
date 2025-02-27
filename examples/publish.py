@@ -146,8 +146,7 @@ with mlflow.start_run(experiment_id=experiment.experiment_id, description=run_de
         COPY api.py .
         COPY api_env .
         COPY api_examples.json .
-        EXPOSE 6000/tcp
-        CMD ["python3", "/usr/src/app/api.py", "--prometheus-port", "6000", "--serving-port", "9000"]
+        CMD ["python3", "/usr/src/app/api.py", "--serving-port", "9000"]
         """
 
         with open(root / "Dockerfile", "w") as f:

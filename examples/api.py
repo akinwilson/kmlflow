@@ -13,7 +13,7 @@ import uvicorn
 
 
 # prometheus integration 
-from prometheus_client import Counter, Gauge, Histogram, generate_latest, CONTENT_TYPE_LATEST, start_http_server
+from prometheus_client import Counter, Gauge, Histogram, generate_latest, CONTENT_TYPE_LATEST #, start_http_server
 from starlette.responses import Response
 from argparse import ArgumentParser
 import time
@@ -272,11 +272,11 @@ def ready():
 if __name__ == "__main__":
     
     parser = ArgumentParser()
-    parser.add_argument("--prometheus-port", type=int, default=6000,  help="Port to help Prometheus client push inference metrics")
+    # parser.add_argument("--prometheus-port", type=int, default=6000,  help="Port to help Prometheus client push inference metrics")
     parser.add_argument("--serving-port",type=int, default=9000, help="Port to help Prometheus client push inference metrics")
     args = parser.parse_args()
 
     
-    start_http_server(args.prometheus_port) 
+    # start_http_server(args.prometheus_port) 
     # Start FastAPI model server on port 8080 
     uvicorn.run(app, host="0.0.0.0", port=args.serving_port)
