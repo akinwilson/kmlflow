@@ -1,0 +1,102 @@
+---
+## Pod Monitor
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: {{ model_name }}-monitor
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      seldon-deployment-id: {{ model_name }}
+  podMetricsEndpoints:
+    - port: "http"  # Match the container port name
+      path: /metrics
+  namespaceSelector:
+    any: true
+---
+## Seldon Deployment
+apiVersion: machinelearning.seldon.io/v1
+kind: SeldonDeployment
+metadata:
+  name: {{ model_name }}
+  namespace: models
+  annotations:
+    seldon.io/no-storage-initializer: "true"
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "9000"  # Updated to match new container port
+spec:
+  protocol: v2
+  predictors:
+    - name: {{ model_name }}
+      replicas: 1
+      graph:
+        name: {{ model_name }}
+        type: MODEL
+        children: []
+        implementation: {{ model_name.upper() }}_SERVER
+      svcOrchSpec:
+        env:
+          - name: LOG_LEVEL
+            value: DEBUG
+      resources:
+        requests:
+          memory: "512Mi"
+          cpu: "500m"
+          nvidia.com/gpu: "1"
+        limits:
+          memory: "1Gi"
+          cpu: "1"
+          nvidia.com/gpu: "1"
+      componentSpecs:
+        - spec:
+            containers:
+              - name: {{ model_name }}
+                livenessProbe:
+                  httpGet:
+                    path: /v2/health/live
+                    port: http  # Named port reference
+                  initialDelaySeconds: 20
+                  periodSeconds: 10
+                readinessProbe:
+                  httpGet:
+                    path: /v2/health/ready
+                    port: http  # Named port reference
+                  initialDelaySeconds: 20
+                  periodSeconds: 10
+                ports:
+                  - name: http  # Updated from "metrics" to "http"
+                    containerPort: 9000
+                    protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ model_name }}-ingress
+  namespace: models
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"  # Enable regex matching
+    nginx.ingress.kubernetes.io/rewrite-target: /v2/models/$1/infer
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          # Prediction Endpoint
+          - path: "/{{ model_name }}(/|$)(.*)"
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: seldon-models-{{ model_name }}
+                port:
+                  number: 9000
+          # API Documentation Endpoint
+          - path: "/{{ model_name }}/docs"
+            pathType: Prefix
+            backend:
+              service:
+                name: seldon-models-{{ model_name }}
+                port:
+                  number: 9000
