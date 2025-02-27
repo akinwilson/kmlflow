@@ -40,6 +40,8 @@ spec:
         env:
           - name: LOG_LEVEL
             value: DEBUG
+          - name: ROOT_PATH
+            value: "/{{ model_name }}"
       componentSpecs:
         - spec:
             containers:
@@ -66,14 +68,37 @@ spec:
                     cpu: "500m"
                     nvidia.com/gpu: "1"
                   limits:
-                    memory: "1Gi"
-                    cpu: "1"
+                    memory: "20Gi"
+                    cpu: "2"
                     nvidia.com/gpu: "1"
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: model-{{ model_name }}-ingress
+  name: model-{{ model_name }}-docs-ingress
+  namespace: models
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"  # Enable regex matching
+    nginx.ingress.kubernetes.io/rewrite-target: /docs$2
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          # API Documentation Endpoint
+          - path: /{{ model_name }}/docs(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: model-{{ model_name }}-predictor-{{ model_name }}-model-{{ model_name }} # seldon-models-model-{{ model_name }} ### model-{{ model_name }}-predictor-{{ model_name }}-model-{{ model_name }}
+                port:
+                  number: 9000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: model-{{ model_name }}-api-ingress
   namespace: models
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"  # Enable regex matching
@@ -85,18 +110,10 @@ spec:
     - http:
         paths:
           # Prediction Endpoint
-          - path: "/{{ model_name }}(/|$)(.*)"
+          - path: /{{ model_name }}(/|$)(.*)
             pathType: ImplementationSpecific
             backend:
               service:
-                name: seldon-models-model-{{ model_name }} ### model-{{ model_name }}-predictor-{{ model_name }}-model-{{ model_name }}
-                port:
-                  number: 9000
-          # API Documentation Endpoint
-          - path: "/{{ model_name }}/docs"
-            pathType: Prefix
-            backend:
-              service:
-                name: seldon-models-model-{{ model_name }} ### model-{{ model_name }}-predictor-{{ model_name }}-model-{{ model_name }}
+                name: model-{{ model_name }}-predictor-{{ model_name }}-model-{{ model_name }}  # seldon-models-model-{{ model_name }} ### model-{{ model_name }}-predictor-{{ model_name }}-model-{{ model_name }}
                 port:
                   number: 9000
