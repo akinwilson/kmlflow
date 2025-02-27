@@ -3,12 +3,12 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
 metadata:
-  name: {{ model_name }}-monitor
+  name: model-{{ model_name }}-monitor
   namespace: monitoring
 spec:
   selector:
     matchLabels:
-      seldon-deployment-id: {{ model_name }}
+      seldon-deployment-id: model-{{ model_name }}
   podMetricsEndpoints:
     - port: "http"  # Match the container port name
       path: /metrics
@@ -19,7 +19,7 @@ spec:
 apiVersion: machinelearning.seldon.io/v1
 kind: SeldonDeployment
 metadata:
-  name: {{ model_name }}
+  name: model-{{ model_name }}
   namespace: models
   annotations:
     seldon.io/no-storage-initializer: "true"
@@ -29,10 +29,10 @@ metadata:
 spec:
   protocol: v2
   predictors:
-    - name: {{ model_name }}
+    - name: predictor-{{ model_name }}
       replicas: 1
       graph:
-        name: {{ model_name }}
+        name: model-{{ model_name }}
         type: MODEL
         children: []
         implementation: {{ model_name.upper() }}_SERVER
@@ -43,7 +43,7 @@ spec:
       componentSpecs:
         - spec:
             containers:
-              - name: {{ model_name }}
+              - name: model-{{ model_name }}
                 livenessProbe:
                   httpGet:
                     path: /v2/health/live
@@ -73,7 +73,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ model_name }}-ingress
+  name: model-{{ model_name }}-ingress
   namespace: models
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"  # Enable regex matching
@@ -89,7 +89,7 @@ spec:
             pathType: ImplementationSpecific
             backend:
               service:
-                name: seldon-models-{{ model_name }}
+                name: seldon-models-model-{{ model_name }} ### model-{{ model_name }}-predictor-{{ model_name }}-model-{{ model_name }}
                 port:
                   number: 9000
           # API Documentation Endpoint
@@ -97,6 +97,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: seldon-models-{{ model_name }}
+                name: seldon-models-model-{{ model_name }} ### model-{{ model_name }}-predictor-{{ model_name }}-model-{{ model_name }}
                 port:
                   number: 9000
