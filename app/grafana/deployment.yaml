@@ -72,7 +72,8 @@ spec:
               value: "true"
             - name: GF_SECURITY_ALLOW_EMBEDDING
               value: "true"
-              
+            - name: GF_SECURITY_SKIP_VERIFY
+              value: "true" 
           volumeMounts:
             - mountPath: /var/lib/grafana
               name: grafana-storage

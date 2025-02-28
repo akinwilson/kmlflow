@@ -11,7 +11,7 @@ spec:
       seldon-deployment-id: model-{{ model_name }}
   podMetricsEndpoints:
     - port: "http"  # Match the container port name
-      path: /metrics
+      path: /prometheus
   namespaceSelector:
     any: true
 ---
@@ -24,7 +24,7 @@ metadata:
   annotations:
     seldon.io/no-storage-initializer: "true"
     prometheus.io/scrape: "true"
-    prometheus.io/path: "/metrics"
+    prometheus.io/path: "/prometheus"
     prometheus.io/port: "9000"  # Updated to match new container port
 spec:
   protocol: v2

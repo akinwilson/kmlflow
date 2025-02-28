@@ -42,6 +42,7 @@ data:
             namespaces:
               names:
                 - models # Target namespace
+        metrics_path: /prometheus
         relabel_configs:
           # Keep only pods with scrape annotation
           - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
@@ -71,7 +72,7 @@ data:
 
       - job_name: 'prometheus'
         static_configs:
-          - targets: ['localhost:9090']
+          - targets: ['prometheus.monitoring.svc.cluster.local:9090']
 
 ---
 apiVersion: apps/v1
@@ -152,3 +153,27 @@ spec:
                 name: prometheus
                 port:
                   number: 80
+# ---
+# apiVersion: rbac.authorization.k8s.io/v1
+# kind: Role
+# metadata:
+#   name: prometheus-scrape
+#   namespace: models
+# rules:
+#   - apiGroups: [""]
+#     resources: ["pods"]
+#     verbs: ["get", "list", "watch"]
+# ---
+# apiVersion: rbac.authorization.k8s.io/v1
+# kind: RoleBinding
+# metadata:
+#   name: prometheus-scrape
+#   namespace: models
+# roleRef:
+#   apiGroup: rbac.authorization.k8s.io
+#   kind: Role
+#   name: prometheus-scrape
+# subjects:
+#   - kind: ServiceAccount
+#     name: monitoring-sa
+#     namespace: monitoring
