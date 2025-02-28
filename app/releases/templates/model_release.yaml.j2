@@ -49,6 +49,9 @@ spec:
                 env:
                   - name: ROOT_PATH
                     value: "/{{ model_name }}"
+                  - name: UVICORN_FORWARDED_ALLOW_IPS
+                    value: "*"
+
                 livenessProbe:
                   httpGet:
                     path: /v2/health/live
@@ -82,7 +85,7 @@ metadata:
   namespace: models
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"  # Enable regex matching
-    nginx.ingress.kubernetes.io/rewrite-target: /{{ model_name }}/docs$2
+    nginx.ingress.kubernetes.io/rewrite-target: /docs$1$2
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
 spec:
   ingressClassName: nginx
@@ -105,7 +108,7 @@ metadata:
   namespace: models
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"  # Enable regex matching
-    nginx.ingress.kubernetes.io/rewrite-target: /{{ model_name }}/v2/models/$1/infer
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
 spec:
   ingressClassName: nginx
