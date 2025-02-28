@@ -60,16 +60,23 @@ python3 fit.py --fast-api-title 'T5 Question and Answering' \
               --d-ff 2048 \
               --max-epoch 10 \
               --layer-norm-epsilon 1.345076777771858e-06 \
-              --dropout-rate 0.2936841282912577 > /var/log/katib/metrics.log 2>&1
+              --dropout-rate 0.2936841282912577 
 
 ```
-The reason we redirect the standard output and standard error of the fitting script to `/var/log/katib/metrics.log` is because that is where the Katib metrics monitor checks to see how well the trial is performing. 
+## Iterating server image and deploying/retracting to/from cluster
 
-To monitor the performance of your fitting script, run 
-```bash
-docker exec -it katib-test /bin/bash
+We want to capture the output image URI from say, the execution of `publish.py`, we could run 
+```bash 
+python publish.py 2>&1 | tee /dev/tty | awk '/naming to docker.io\// {sub(/.*naming to docker.io\//, ""); sub(/ done$/, ""); print; exit}'
 ```
-once inside a second shell of the `katib-test` container, you cant to continuously monitor the routine by running
+
+which then can be used with `app/releases/release.py`, to quickly deploy
+```bash 
+./release.py --image-uri $(python ../../examples/publish.py 2>&1 | tee /dev/tty | awk '/naming to docker.io\// {sub(/.*naming to docker.io\//, ""); sub(/ done$/, ""); print; exit}') --add
+```
+
+
+say, this the released the model with image URI `akinolawilson/t5-small:85a39b98`, we can retract the deployment and delete the manifests along with the server entry with 
 ```bash
-cd /var/log/katib && watch -n0.1 cat metrics.log
+./release.py --image-uri akinolawilson/t5-small:85a39b98 --remove 
 ```

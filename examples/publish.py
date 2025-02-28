@@ -1,7 +1,8 @@
 import os
 import sys 
 import mlflow
-import json 
+import json
+import shutil
 from pathlib import Path
 from transformers import T5ForConditionalGeneration, T5Tokenizer
 from mlflow.models import ModelSignature
@@ -142,7 +143,7 @@ with mlflow.start_run(experiment_id=experiment.experiment_id, description=run_de
         dockerfile_content = f"""
         FROM python:{".".join(sys.version.split(" ")[0].split(".")[:-1])} 
         WORKDIR /usr/src/app
-        RUN pip install fastapi pydantic uvicorn mlflow torch transformers python-dotenv sentencepiece boto3 pynvml psutil prometheus_client
+        RUN pip install fastapi pydantic uvicorn mlflow torch transformers python-dotenv sentencepiece boto3 pynvml psutil prometheus_client httpx
         COPY api.py .
         COPY api_env .
         COPY api_examples.json .
@@ -163,5 +164,11 @@ with mlflow.start_run(experiment_id=experiment.experiment_id, description=run_de
         mlflow.set_tag("serving_container", image_name)
         mlflow.set_tag("local_inference", f"docker run --network host --rm {image_name}")
         mlflow.end_run(status="FINISHED")
-
     mlflow.end_run(status="FINISHED")
+
+    # removing local artifacts 
+    if os.path.exists("tokenizer"):
+        shutil.rmtree("tokenizer")
+        
+    if os.path.exists("model"):
+        shutil.rmtree("model") 

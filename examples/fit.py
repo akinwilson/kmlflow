@@ -354,7 +354,7 @@ if __name__=="__main__":
             FROM python:{".".join(sys.version.split(" ")[0].split(".")[:-1])} 
             WORKDIR /usr/src/app
 
-            RUN pip install fastapi pydantic uvicorn mlflow torch transformers python-dotenv sentencepiece boto3 pynvml psutil prometheus_client
+            RUN pip install fastapi pydantic uvicorn mlflow torch transformers python-dotenv sentencepiece boto3 pynvml psutil prometheus_client httpx
             COPY api.py .
             COPY api_env .
             COPY api_examples.json .

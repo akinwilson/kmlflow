@@ -6,6 +6,9 @@ import logging
 from pathlib import Path 
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
+
 from pydantic import BaseModel, create_model
 from mlflow.models import ModelSignature
 from mlflow.types import Schema, ColSpec
@@ -39,22 +42,7 @@ INFERENCE_LATENCY = Histogram('server_inference_duration_seconds', 'Time taken b
 CPU_USAGE = Gauge('server_cpu_usage', 'Current CPU utilization percentage')
 MEMORY_USAGE = Gauge('server_memory_usage_gigabytes', 'Current memory usage in gigabytes')
 
-# gpu metric gauges if available 
-no_gpus = torch.cuda.device_count()
-if no_gpus > 0:
-    gpu_usage_dict = {
-        idx: {
-            "GPU_MEMORY_USAGE": Gauge(
-                f'server_gpu_{idx}_memory_usage_gigabytes', 
-                f'GPU {idx} memory usage in gigabytes'
-            ),
-            "GPU_UTILIZATION": Gauge(
-                f'server_gpu_{idx}_utilization', 
-                f'GPU {idx} utilization percentage'
-            )
-        } 
-        for idx in range(1, no_gpus + 1)
-    }
+
 #################################################################################################
 server_load_start = time.time()
 
@@ -84,30 +72,24 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 logger.info(f"Using device: {device}")
 
 
-
-
-# Initialize NVIDIA GPU monitoring 
-gpu_enabled = False 
-try:
-    logger.info("Attempting to initialise GPU statistics sampler ...")
-    pynvml.nvmlInit()
-    gpu_handle_dict = {idx:pynvml.nvmlDeviceGetHandleByIndex(idx) for idx in range(no_gpus)}
-    gpu_enabled = True 
-    logger.info("Initialised GPU statistics sampler")
-except Exception:
-    print("No GPU detected, GPU metrics will not be available.")
-    pass 
-
-
-
-
-
-
+root_path = os.getenv("ROOT_PATH", "")  # hosting being ingress
+logger.info(f"ROOT_PATH: {root_path}")
 app = FastAPI(
     title=title,
     description=desc,
     version=version,
+    root_path=root_path,
 )
+
+# Allow all origins, methods, and headers (for debugging, restrict in production)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Replace with specific origins if needed
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all HTTP methods (GET, POST, etc.)
+    allow_headers=["*"],  # Allows all headers
+)
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
 
 # Load the MLflow model
 model_loaded = False 
@@ -115,7 +97,7 @@ load_start = time.time()
 try:
     logger.info("Loading MLflow model...")
     logger.info(f"Loading from: {model_uri}")
-    model = mlflow.pyfunc.load_model(model_uri)
+    model = mlflow.pyfunc.load_model(model_uri, suppress_warnings=True)
     logger.info(f"MLflow model loaded successfully from {model_uri}.")
     model_loaded = True 
 except Exception as e:
@@ -123,7 +105,7 @@ except Exception as e:
     raise
 model_load_time = time.time() - load_start
 
-
+# e7384207
 
 
 # Get model signature
@@ -178,6 +160,35 @@ server_load_time = time.time() - server_load_start
 
 
 
+# gpu metric gauges if available 
+no_gpus = torch.cuda.device_count()
+if no_gpus > 0:
+    gpu_usage_dict = {
+        idx-1: {
+            "GPU_MEMORY_USAGE": Gauge(
+                f'server_gpu_{idx}_memory_usage_gigabytes', 
+                f'GPU {idx} memory usage in gigabytes'
+            ),
+            "GPU_UTILIZATION": Gauge(
+                f'server_gpu_{idx}_utilization', 
+                f'GPU {idx} utilization percentage'
+            )
+        } 
+        for idx in range(1, no_gpus + 1)
+    }
+# Initialize NVIDIA GPU monitoring 
+gpu_enabled = False 
+try:
+    logger.info("Attempting to initialise GPU statistics sampler ...")
+    pynvml.nvmlInit()
+    gpu_handle_dict = {idx:pynvml.nvmlDeviceGetHandleByIndex(idx) for idx in range(no_gpus)}
+    gpu_enabled = True 
+    logger.info("Initialised GPU statistics sampler")
+except Exception:
+    print("No GPU detected, GPU metrics will not be available.")
+    pass 
+
+
 ### Periodic System Metrics Update
 def update_metrics():
     MODEL_LOAD_TIME.set(model_load_time)
@@ -188,11 +199,11 @@ def update_metrics():
         if gpu_enabled:
             for (idx, handle ) in gpu_handle_dict.items():
                 gpu_util = pynvml.nvmlDeviceGetUtilizationRates(handle).gpu
-                gpu_mem = float(bytes2human(pynvml.nvmlDeviceGetMemoryInfo(handle).used[:-1]))
-                util_dict[idx]['GPU_UTILIZATION'].set(gpu_util)
-                util_dict[idx]['GPU_MEMORY_USAGE'].set(gpu_mem)
+                gpu_mem = float(bytes2human(pynvml.nvmlDeviceGetMemoryInfo(handle).used)[:-1])
+                gpu_usage_dict[idx]['GPU_UTILIZATION'].set(gpu_util)
+                gpu_usage_dict[idx]['GPU_MEMORY_USAGE'].set(gpu_mem)
 
-        time.sleep(10)
+        time.sleep(15)
 # Start background thread for metrics update 
 threading.Thread(target=update_metrics, daemon=True).start() 
 
