@@ -16,3 +16,5 @@ gdown==5.2.0
 pynvml==12.0.0
 psutil==7.0.0
 git+https://github.com/kubeflow/katib.git@master#subdirectory=sdk/python/v1beta1
+pytest==8.3.4
+pytest-cov==6.0.0
