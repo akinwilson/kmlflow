@@ -2,9 +2,62 @@
 import jinja2
 import argparse
 import json
+import os
+import errno 
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 from pathlib import Path
+import subprocess
+
+MAGENTA = "\033[35m"
+BOLD = "\033[1m"
+RESET = "\033[0m"
+
+
+class AbsoluteFolderPath:
+    '''
+        helper for finding model/release folder independent of where script is called form 
+        assuming only one folder containing releases/models exists in the filesystem 
+
+        TODO: Raise Error if more than one matching directory exists 
+    '''    
+    def __init__(self, start_node = Path("/"), node_link = "releases/models"):
+        self.start_node : Path = start_node
+        self.node_link = node_link
+    
+    
+    def search(self):
+        try:
+            for p in self.start_node.rglob(self.node_link):
+                try:
+                    if p.is_dir():
+                        return p.resolve()  # Return first matching directory
+                except PermissionError:
+                    continue  # Skip directories where permission is denied
+        except PermissionError:
+            pass  # Skip if root-level scanning fails
+        return None 
+
+    def __call__(self):
+        abs_path = self.search()
+        if abs_path:
+            return str(abs_path)
+        else:
+            err_msg = (
+            f"Absolute path {self.node_link} could not be found.\n\n"
+            f"Folder containing subpath `{BOLD}{MAGENTA}releases/models{RESET}` or `{BOLD}{MAGENTA}releases/templates{RESET}` "
+            f"is supposed to contain Seldon model deployment manifests and the templates which generate them. "
+            f"Subpath provided did not match required pattern."
+        )
+            raise FileNotFoundError(errno.ENOENT, err_msg, self.node_link)
+    
+    def __str__(self):
+        return self.__call__()
+
+            
+        
+
+
 class Compiler:
     '''
     Compiles a seldon model release template, and saves it to ./models/<model_name>.yaml
@@ -15,18 +68,22 @@ class Compiler:
         
         self.remove = remove 
         self.add = add 
-        
         self.__call__()
+
+
     def __call__(self):
-        template_file = Path(__file__).parent / "templates" / 'model_release.yaml.j2'
-        output_dir = Path(__file__).parent / "models" 
+        template_file = Path(str(AbsoluteFolderPath(node_link="releases/templates")))  / 'model_release.yaml.j2'
+        output_dir = Path(str(AbsoluteFolderPath(node_link="releases/models"))) 
+
         output_dir.mkdir(parents=True, exist_ok=True)
         output_file = output_dir / f"{self.model_name}.yaml"
         if self.remove:
             if output_file.exists():
-                print(f"Removing model release file: {output_file}")
-                output_file.unlink()
+                # let the inferenceServerManger first delete the object
                 return
+                # print(f"Removing model release file: {output_file}")
+                # output_file.unlink()
+                # return
         if self.add: 
             if output_file.exists():
                 print(f"Release manifest for model {self.model_name} exists already, overwriting existing release.")
@@ -52,13 +109,51 @@ class InferenceServerManager:
         self.add = add
         self.remove = remove
 
+        self.model_dir =  Path(str(AbsoluteFolderPath(node_link="releases/models")))  # Path(__file__).parent 
+        
+        
         # Load Kubernetes config
         config.load_kube_config()  # Use config.load_incluster_config() if running inside a cluster
-        self.core_v1 = client.CoreV1Api()
+        self.kclient = client.CoreV1Api()
+
 
         # Call the update logic during initialization
         self.__call__()
 
+    def apply(self):
+        """
+        Applies all model deployment manifests in `releases/models` folder 
+        """
+        command = ["kubectl", "apply", "-f", str(self.model_dir) + "/" ]
+        result = subprocess.run(command, capture_output=True, text=True)
+
+        if result.returncode == 0:
+            release_yamls = [str(x).split("/")[-1] for x in list(self.model_dir.iterdir())]
+            print("Output:", result.stdout)
+            print(f"\n\nSuccessfully released model: {release_yamls}\n\n")
+        else:
+            release_yamls = [str(x).split("/")[-1] for x in list(self.model_dir.iterdir())]
+            print(f"Failed to apply resources. Found deployment manifest: {release_yamls}")
+            print("Error:", result.stderr)
+ 
+    def delete(self):
+        """
+        Deletes Kubernetes resources using `kubectl delete -f`.
+        """
+        command = ["kubectl", "delete", "-f", str(self.model_dir) + "/"]
+        result = subprocess.run(command, capture_output=True, text=True)
+
+        if result.returncode == 0:
+            deleted_release_yamls = [str(x).split("/")[-1] for x in list(self.model_dir.iterdir())]
+            print(f"Successfully deleted model release: {deleted_release_yamls}")
+            print("Output:", result.stdout)
+            print("Deleting manifest files ...")
+            [x.unlink() for x in list(self.model_dir.iterdir())]
+        else:
+            deleted_release_yamls = list(self.model_dir.iterdir())
+            print(f"Failed to delete model release: {deleted_release_yamls}")
+            print("Error:", result.stderr)
+    
     def __call__(self):
         """
         Adds or removes an entry from the predictor_servers dictionary in the Seldon Core ConfigMap.
@@ -67,7 +162,7 @@ class InferenceServerManager:
         cm_name = "seldon-config"
         namespace = "seldon-system"
         try:
-            cm = self.core_v1.read_namespaced_config_map(cm_name, namespace)
+            cm = self.kclient.read_namespaced_config_map(cm_name, namespace)
         except ApiException as e:
             print(f"Failed to fetch ConfigMap: {e}")
             return
@@ -87,19 +182,23 @@ class InferenceServerManager:
             }
             predictor_servers[self.server_name] = new_entry
             print(f"Added entry for {self.server_name} to predictor_servers.")
+            self.apply()
+
 
         elif self.remove:
             # Remove the entry from the predictor_servers dictionary
             if self.server_name in predictor_servers:
                 del predictor_servers[self.server_name]
                 print(f"Removed entry for {self.server_name} from predictor_servers.")
+                self.delete()
             else:
                 print(f"Entry {self.server_name} not found in predictor_servers.")
+                self.delete()
 
         # Update the ConfigMap with the modified predictor_servers
         cm.data["predictor_servers"] = json.dumps(predictor_servers, indent=4)
         try:
-            self.core_v1.replace_namespaced_config_map(cm_name, namespace, cm)
+            self.kclient.replace_namespaced_config_map(cm_name, namespace, cm)
             print("ConfigMap updated successfully.")
         except ApiException as e:
             print(f"Failed to update ConfigMap: {e}")
