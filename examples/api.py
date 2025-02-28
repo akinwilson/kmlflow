@@ -208,7 +208,7 @@ def update_metrics():
 threading.Thread(target=update_metrics, daemon=True).start() 
 
 
-@app.get("/metrics") 
+@app.get("/prometheus") 
 def metrics():
     '''
     prometheus metrics reporting 
