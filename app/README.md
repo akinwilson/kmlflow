@@ -151,103 +151,54 @@ docker build . -f docker/Dockerfile.ui -t akinolawilson/kmlflow-ui:latest && doc
 ```
 
 
-### Adding and removing seldon servers: updating the seldon configMap
+### Adding and removing seldon servers and generating deployments: updating the seldon configMap, compiling deployment template and applying or removing them from the cluster.
 
-Once a model is trained, update the `configMap` of Seldon such that the custom server is available via the `implementation` field of `SeldonDeployment`s. Say you want to deploy the image `docker.io/akinolawilson/t5-small:fc5e18ab` as a server to Seldon,  you can use the follow function to make seldon aware of your need model server with  
+**Note** The following approach is a temporary workaround until the MLFlow UI can have the following functionality integrated into its UI. 
+
+Once a model is trained, update the `configMap` of Seldon such that the custom server is available via the `implementation` field of `SeldonDeployment`s. Say you want to deploy the image `docker.io/akinolawilson/t5-small:fc5e18ab` as a server to Seldon,  you can use the follow script to make seldon aware of your inference server, and create a release of your `SeldonDeployment` with  the boiler-plate variables filled out in `/models`
+
+#### Release 
+To add, for example, the inference image `akinolawilson/t5-small:9f3e5d36` to the server and generate the `SeldonDeployment` manifests, applying them to the cluster too, run
 ```bash 
-add_server_seldon_config() {
-    local IMAGE="$1"
-
-    # Extract image name and tag
-    local IMG_NAME=$(echo "$IMAGE" | cut -d':' -f1)  # 'docker.io/akinolawilson/t5-small'
-    local TAG=$(echo "$IMAGE" | cut -d':' -f2)       # 'fc5e18ab' (original case)
-    local SERVER_NAME=$(echo "$TAG" | tr '[:lower:]' '[:upper:]')_SERVER  # 'FC5E18AB_SERVER'
-    local MAGENTA='\033[0;95m'
-    local RESET='\033[0m'
-    echo "Updating Seldon ConfigMap with:"
-    echo -e "  - Image: ${MAGENTA}$IMG_NAME${RESET}"
-    echo -e "  - Tag: ${MAGENTA}$TAG${RESET}"
-    echo -e "  - Server Name: ${MAGENTA}$SERVER_NAME${RESET}"
-
-    # Fetch current config and check if the server already exists
-    local CURRENT_CONFIG=$(kubectl get configmap -n seldon-system seldon-config -o json | jq -r '.data.predictor_servers | fromjson')
-
-    if echo "$CURRENT_CONFIG" | jq -e "has(\"$SERVER_NAME\")" >/dev/null; then
-        echo "Server $SERVER_NAME already exists. Updating its image and tag."
-        NEW_CONFIG=$(echo "$CURRENT_CONFIG" | jq --arg name "$SERVER_NAME" --arg img "$IMG_NAME" --arg tag "$TAG" \
-            '(.[$name].protocols.v2.image = $img) | (.[$name].protocols.v2.defaultImageVersion = $tag)')
-    else
-        echo "Server $SERVER_NAME does not exist. Adding new entry."
-        NEW_CONFIG=$(echo "$CURRENT_CONFIG" | jq --arg name "$SERVER_NAME" --arg img "$IMG_NAME" --arg tag "$TAG" \
-            '. + {($name): { "protocols": { "v2": { "image": $img, "defaultImageVersion": $tag }}}}')
-    fi
-
-    # Apply the updated ConfigMap
-    kubectl get configmap -n seldon-system seldon-config -o json | \
-    jq --argjson newConfig "$NEW_CONFIG" '.data.predictor_servers = (tojson | $newConfig | tojson)' | \
-    kubectl apply -f -
-
-    echo "ConfigMap updated. Restarting Seldon controller pods..."
-
-    # Restart the pods to reload the ConfigMap
-    kubectl delete pods -n seldon-system -l control-plane=seldon-controller-manager
-
-    echo "Seldon controller pods restarted."
-}
+./releases/release.py --image-uri akinolawilson/t5-small:9f3e5d36 --add
 ```
-and to remove the server from Seldon with 
-```bash
-remove_server_seldon_config() {
-    local IMAGE="$1"
-    local MAGENTA='\033[0;95m'
-    local RESET='\033[0m'
-    # Extract image name
-    local IMG_NAME=$(echo "$IMAGE" | cut -d':' -f1)  # 'docker.io/akinolawilson/t5-small'
-
-    echo -e "Removing Seldon server associated with image: ${MAGENTA}$IMG_NAME${RESET}"
-
-    # Fetch current config
-    local CURRENT_CONFIG=$(kubectl get configmap -n seldon-system seldon-config -o json | jq -r '.data.predictor_servers | fromjson')
-
-    # Find the server(s) matching the given image name
-    local MATCHING_SERVERS=$(echo "$CURRENT_CONFIG" | jq --arg img "$IMG_NAME" \
-        'to_entries | map(select(.value.protocols.v2.image == $img)) | map(.key)')
-
-    if [ "$(echo "$MATCHING_SERVERS" | jq 'length')" -eq 0 ]; then
-        echo "No server found with image: $IMG_NAME"
-        return
-    fi
-
-    echo "Found servers to remove: $(echo "$MATCHING_SERVERS" | jq -r '.[]')"
-
-    # Remove the matching servers
-    local NEW_CONFIG=$(echo "$CURRENT_CONFIG" | jq --argjson keys "$MATCHING_SERVERS" \
-        'with_entries(select([.key] | inside($keys) | not))')
-
-    # Apply the updated ConfigMap
-    kubectl get configmap -n seldon-system seldon-config -o json | \
-    jq --argjson newConfig "$NEW_CONFIG" '.data.predictor_servers = (tojson | $newConfig | tojson)' | \
-    kubectl apply -f -
-
-    echo "ConfigMap updated. Restarting Seldon controller pods..."
-
-    # Restart the pods to reload the ConfigMap
-    kubectl delete pods -n seldon-system -l control-plane=seldon-controller-manager
-
-    echo "Seldon controller pods restarted."
-}
-```
-
-which once defined in your shell, can be called like 
-```bash
-add_server_seldon_config "docker.io/akinolawilson/t5-small:fb8b0d2d"
-```
-or 
+There will be a deployment manifest generated here `./releases/models/9f3e5d36.yaml` which has been already been applied to the cluster. The ingress path to the exposed endpoint of the model corresponds to the image tag, in this example `9f3e5d36`, i.e
 ```bash 
-remove_server_seldon_config "docker.io/akinolawilson/t5-small:fb8b0d2d"
+https://192.168.49.2/9f3e5d36/docs
 ```
+will let you access the documentation page for the deployed model, and 
+```bash
+https://192.168.49.2/9f3e5d36
+```
+is the API endpoint for the model. 
+
+#### Retract 
+
+To retract the model release, delete the manifests and update the  inference server, run 
+```bash 
+./releases/release.py --image-uri akinolawilson/t5-small:9f3e5d36 --remove 
+```
+
+
 
 to see the updated configMap to ensure changes have taken place, run 
 ```bash 
 kubectl get configmap -n seldon-system seldon-config -o json | jq -r '.data.predictor_servers | fromjson' | jq
+```
+
+#### Iterating server image and deploying/retracting to/from cluster
+
+We want to capture the output image URI from say, the execution of `publish.py`, we could run 
+```bash 
+python ../examples/publish.py 2>&1 | tee /dev/tty | awk '/naming to docker.io\// {sub(/.*naming to docker.io\//, ""); sub(/ done$/, ""); print; exit}'
+```
+
+
+which then can be used with `app/releases/release.py`, to quickly deploy
+```bash 
+./release.py --image-uri $(python ../examples/publish.py 2>&1 | tee /dev/tty | awk '/naming to docker.io\// {sub(/.*naming to docker.io\//, ""); sub(/ done$/, ""); print; exit}') --add
+```
+say, this the released the model with image URI `akinolawilson/t5-small:85a39b98`
+```bash
+./release.py --image-uri akinolawilson/t5-small:85a39b98 --remove 
 ```
