@@ -1,0 +1,141 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: seldon-dashboard-4fd366b0
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"  # Sidecar will detect this
+data:
+  4fd366b0-dashboard.json: |
+    {
+      "uid": "4fd366b0",
+      "title": "4fd366b0",
+      "editable": true,
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "type": "dashboard"
+          }
+        ]
+      },
+      "panels": [
+        {
+          "title": "Total Inference Requests",
+          "type": "stat",
+          "datasource": "Prometheus",
+          "targets": [{ "expr": "server_requests_total", "legendFormat": "Total Requests" }]
+        },
+        {
+          "title": "Successful Predictions",
+          "type": "stat",
+          "datasource": "Prometheus",
+          "targets": [{ "expr": "server_successful_predictions_total", "legendFormat": "Success" }]
+        },
+        {
+          "title": "Failed Predictions",
+          "type": "stat",
+          "datasource": "Prometheus",
+          "targets": [{ "expr": "server_failed_predictions_total", "legendFormat": "Failures" }]
+        },
+        {
+          "title": "CPU Usage (%)",
+          "type": "gauge",
+          "datasource": "Prometheus",
+          "targets": [{ "expr": "server_cpu_usage", "legendFormat": "CPU %" }]
+        },
+        {
+          "title": "Memory Usage (GB)",
+          "type": "gauge",
+          "datasource": "Prometheus",
+          "targets": [{ "expr": "server_memory_usage_gigabytes", "legendFormat": "Memory GB" }]
+        },
+        {
+          "title": "GPU Utilization (%)",
+          "type": "gauge",
+          "datasource": "Prometheus",
+          "targets": [{ "expr": "server_gpu_1_utilization", "legendFormat": "GPU %" }]
+        },
+        {
+          "title": "GPU Memory Usage (GB)",
+          "type": "gauge",
+          "datasource": "Prometheus",
+          "targets": [{ "expr": "server_gpu_1_memory_usage_gigabytes", "legendFormat": "GPU Mem GB" }]
+        },
+        {
+          "title": "Inference Latency",
+          "type": "graph",
+          "datasource": "Prometheus",
+          "targets": [
+            { 
+              "expr": "histogram_quantile(0.95, sum(rate(server_inference_duration_seconds_bucket[5m])) by (le))",
+              "legendFormat": "95th Percentile"
+            }
+          ]
+        },
+        {
+          "title": "GC Objects Collected",
+          "type": "graph",
+          "datasource": "Prometheus",
+          "targets": [
+            { "expr": "python_gc_objects_collected_total", "legendFormat": "Collected Objects" }
+          ]
+        },
+        {
+          "title": "GC Collections Per Generation",
+          "type": "graph",
+          "datasource": "Prometheus",
+          "targets": [
+            { "expr": "python_gc_collections_total", "legendFormat": "GC Collections" }
+          ]
+        },
+        {
+          "title": "Virtual Memory Usage",
+          "type": "stat",
+          "datasource": "Prometheus",
+          "targets": [{ "expr": "process_virtual_memory_bytes / 1e9", "legendFormat": "Virtual Mem (GB)" }]
+        },
+        {
+          "title": "Resident Memory Usage",
+          "type": "stat",
+          "datasource": "Prometheus",
+          "targets": [{ "expr": "process_resident_memory_bytes / 1e9", "legendFormat": "Resident Mem (GB)" }]
+        },
+        {
+          "title": "Model Load Time (s)",
+          "type": "stat",
+          "datasource": "Prometheus",
+          "targets": [{ "expr": "model_load_time_seconds", "legendFormat": "Load Time" }]
+        },
+        {
+          "title": "Server Load Time (s)",
+          "type": "stat",
+          "datasource": "Prometheus",
+          "targets": [{ "expr": "server_load_time_seconds", "legendFormat": "Server Load" }]
+        },
+        {
+          "title": "Process Start Time",
+          "type": "stat",
+          "datasource": "Prometheus",
+          "targets": [{ "expr": "process_start_time_seconds", "legendFormat": "Start Time (s)" }]
+        },
+        {
+          "title": "CPU Time Spent (s)",
+          "type": "graph",
+          "datasource": "Prometheus",
+          "targets": [{ "expr": "process_cpu_seconds_total", "legendFormat": "CPU Time" }]
+        },
+        {
+          "title": "Open File Descriptors",
+          "type": "graph",
+          "datasource": "Prometheus",
+          "targets": [{ "expr": "process_open_fds", "legendFormat": "Open FDs" }]
+        },
+        {
+          "title": "Max File Descriptors",
+          "type": "graph",
+          "datasource": "Prometheus",
+          "targets": [{ "expr": "process_max_fds", "legendFormat": "Max FDs" }]
+        }
+      ]
+    }
