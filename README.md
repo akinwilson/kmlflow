@@ -145,11 +145,17 @@ usage: fit.py [-h] [--vocab-size VOCAB_SIZE] [--d-model D_MODEL] [--d-kv D_KV]
 ## To do Feb 20 2025
 
 
-- [ ] configure github actions and webhooks to automate model releasing and retracting. This leads onto the customising the MLFlow UI.   
+- [ ] Update grafana to include sidcar for automatic config detections 
 
+- [ ] Reduce current serving example down to correct template 
+- [ ] Add seldon default grafana dashboard to model release template
+- [ ] create AB testing deployment template and associated dashboard 
+- [ ] Add Endpoint tab in [K5W UI](https://192.168.49.2/kmlflow) which is a drop-down menu from currently live endpoints, drop-down selections provides selects iframe containing docs page of model. 
+- [ ] Deploy [kubeflow pipelines](https://www.kubeflow.org/docs/components/pipelines/overview/?hl=zh_cn), provide example, include in K5W UI
 - [ ] Customise the MLFlow server to allow for deployments via registering the model registry UI. Given a  serving image uri, let users deploy a model using either one of the strategies; single deployment, A/B testing,  canary, blue-green or shadow deployment. This should work via the UI triggering a webhook to update to the github repository which ArgoCD is watching, providing a serving image URI to be deployed. 
+- [ ] Consider deployment of [Harbor](https://goharbor.io/) for private remote registry management. 
 
-- [ ] Consider deployment of [Harbor](https://goharbor.io/) for private remote image management. 
+- [ ] Add global search engine [Meili](https://www.meilisearch.com/) to K5W UI which redirects to relevant objects; trials, endpoints, trial results, dashboard etc. 
 
 - [ ] Fix landing page of MinIO. Currently, need to programmatically create the bucket during the deployment of the cluster. When logging into the minio service, you're supposed to be redirect to the web UI for all buckets, but a blank screen appears instead. Buckets can only be viewed via a direct URL, and created programmatically like in the `./app/deploy.sh` script. Need to configure `./app/minio/deployment.yaml` to ingress objects to correctly redirect to the land page of MiniIO after after logging into. i.e 
 `https://192.168.49.2/minio/login` should redirect correctly to `http://192.168.49.2/minio/browser` but this is currently a blank screen.

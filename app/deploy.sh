@@ -99,6 +99,46 @@ echo "Ingress NGINX controller is ready."
 echo ""
 echo ""
 
+echo "Customizing ingress headers ..."
+kubectl apply -f "$SCRIPT_DIR/nginx/header.yaml"
+kubectl get configmap ingress-nginx-controller -n ingress-nginx -o yaml | yq eval '.data += {"add-headers": "/etc/nginx/custom-headers.conf"}' - > "$SCRIPT_DIR/nginx/cm.yaml"
+kubectl apply -f "$SCRIPT_DIR/nginx/cm.yaml"
+kubectl patch deployment ingress-nginx-controller -n ingress-nginx --type=json -p='[
+  {
+    "op": "add",
+    "path": "/spec/template/spec/volumes/-",
+    "value": {
+      "name": "custom-headers",
+      "configMap": {
+        "name": "custom-nginx-headers"
+      }
+    }
+  },
+  {
+    "op": "add",
+    "path": "/spec/template/spec/containers/0/volumeMounts/-",
+    "value": {
+      "name": "custom-headers",
+      "mountPath": "/etc/nginx/custom-headers.conf",
+      "subPath": "custom-headers.conf"
+    }
+  }
+]'
+
+
+kubectl rollout restart deployment ingress-nginx-controller -n ingress-nginx
+
+echo "Waiting for Ingress NGINX controller to be ready..."
+while ! kubectl get pods -n ingress-nginx -l app.kubernetes.io/name=ingress-nginx -o jsonpath='{.items[*].status.conditions[?(@.type=="Ready")].status}' | grep -q "True"; do
+  echo "Ingress NGINX controller not ready yet, waiting..."
+  sleep 5
+done
+echo "Ingress NGINX controller is ready."
+echo ""
+echo ""
+
+
+
 echo "Install Katib ..."
 kubectl apply -k "github.com/kubeflow/katib.git/manifests/v1beta1/installs/katib-standalone?ref=master"
 echo ""
@@ -182,17 +222,17 @@ echo "Installing ArgoCD ..."
 
 kubectl apply -f "$SCRIPT_DIR/argocd/ns.yaml"
 kubectl apply -f "$SCRIPT_DIR/argocd/secrets.yaml"
-kubectl apply -f "$SCRIPT_DIR/argocd/ingress.yaml"
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 kubectl patch cm argocd-cmd-params-cm -n argocd --type merge -p '{"data": {"server.rootpath": "/argo/"}}'
-kubectl get cm argocd-cm -n argocd -o yaml | yq eval '.data += {"dex.config": "web:\n  headers:\n    X-Frame-Options: \"ALLOWALL\"", "users.anonymous.enabled": "true"}' - > "$SCRIPT_DIR/argocd/cm.yaml"
+kubectl get cm argocd-cm -n argocd -o yaml | yq eval '.data += {"dex.config": "web:\n  headers:\n    X-Frame-Options: \"ALLOWALL\"", "users.anonymous.enabled": "true", "server.x-frame-options": "ALLOWALL"}' - > "$SCRIPT_DIR/argocd/cm.yaml"
 kubectl apply -f "$SCRIPT_DIR/argocd/cm.yaml"
-# kubectl apply -f "$SCRIPT_DIR/argocd/deployment.yaml" -n argocd
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout $SCRIPT_DIR/argocd/tls.key -out $SCRIPT_DIR/argocd/tls.crt \
+  -subj "/CN=192.168.49.2" \
+  -addext "subjectAltName = IP:192.168.49.2"
 
-# change the server to be hosted under path /argo
-# curl -s https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml | \
-# yq eval '(.spec.template.spec.containers[] | select(.name == "argocd-server")).args += ["--rootpath=/argo/"]' - | \
-# kubectl apply -f - -n argocd
+kubectl create secret tls argocd-tls --key="$SCRIPT_DIR/argocd/tls.key" --cert="$SCRIPT_DIR/argocd/tls.crt" -n argocd
+kubectl apply -f "$SCRIPT_DIR/argocd/ingress.yaml"
 
 kubectl apply -f "$SCRIPT_DIR/argocd/app.yaml"
 echo ""
