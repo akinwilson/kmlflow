@@ -183,7 +183,12 @@ echo "Installing ArgoCD ..."
 kubectl apply -f "$SCRIPT_DIR/argocd/ns.yaml"
 kubectl apply -f "$SCRIPT_DIR/argocd/secrets.yaml"
 kubectl apply -f "$SCRIPT_DIR/argocd/ingress.yaml"
-kubectl apply -f "$SCRIPT_DIR/argocd/deployment.yaml" -n argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl patch cm argocd-cmd-params-cm -n argocd --type merge -p '{"data": {"server.rootpath": "/argo/"}}'
+kubectl get cm argocd-cm -n argocd -o yaml | yq eval '.data += {"dex.config": "web:\n  headers:\n    X-Frame-Options: \"ALLOWALL\"", "users.anonymous.enabled": "true"}' - > "$SCRIPT_DIR/argocd/cm.yaml"
+kubectl apply -f "$SCRIPT_DIR/argocd/cm.yaml"
+# kubectl apply -f "$SCRIPT_DIR/argocd/deployment.yaml" -n argocd
+
 # change the server to be hosted under path /argo
 # curl -s https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml | \
 # yq eval '(.spec.template.spec.containers[] | select(.name == "argocd-server")).args += ["--rootpath=/argo/"]' - | \
