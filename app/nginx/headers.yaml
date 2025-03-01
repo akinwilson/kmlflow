@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: custom-nginx-headers
+  namespace: ingress-nginx
+data:
+  custom-headers.conf: |
+    more_set_headers "X-Frame-Options: ALLOWALL";
+    more_set_headers "Content-Security-Policy: frame-ancestors *";
