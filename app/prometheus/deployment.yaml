@@ -48,7 +48,13 @@ data:
           - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
             action: keep
             regex: "true"
-          
+
+          # Drop specific endpoints (port 5001 and 9500)
+          - source_labels: [__address__]
+            action: drop
+            regex: ".*:(5001|9500)"
+
+
           # Set metrics path from annotation
           - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
             action: replace
