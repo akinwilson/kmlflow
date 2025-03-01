@@ -72,7 +72,7 @@ echo ""
 
 # Ensure /data exists inside Minikube
 echo "Ensuring /data directory exists inside Minikube..."
-minikube ssh -- "sudo mkdir -p /data/katib && sudo mkdir -p /data/argo && sudo mkdir -p /data/prometheus && sudo mkdir -p /data/grafana  && sudo chown -R 472:472 /data/grafana && sudo mkdir -p /data/mlflow && sudo mkdir -p /data/minio && sudo chmod -R 777 /data"
+minikube ssh -- "sudo mkdir -p /data/katib && sudo mkdir -p /data/argo && sudo mkdir -p /data/prometheus && sudo mkdir -p /data/grafana  && sudo chown -R 472:472 /data/grafana && sudo mkdir -p /data/meili && sudo mkdir -p /data/mlflow && sudo mkdir -p /data/minio && sudo chmod -R 777 /data"
 echo "/data directory is ready."
 echo ""
 echo ""
