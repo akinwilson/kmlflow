@@ -6,6 +6,7 @@ metadata:
   labels:
     grafana_dashboard: "1"  # Sidecar will detect this
 data:
+# http://prometheus.monitoring.svc.cluster.local:9090/prometheus
   4fd366b0-dashboard.json: |
     {
       "uid": "4fd366b0",
