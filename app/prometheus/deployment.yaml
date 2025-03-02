@@ -38,37 +38,30 @@ data:
     scrape_configs:
       - job_name: 'seldon-models'
         kubernetes_sd_configs:
-          - role: pod # Changed to scrape pods directly
+          - role: pod
             namespaces:
               names:
-                - models # Target namespace
-        metrics_path: /prometheus
+                - models
         relabel_configs:
-          # Keep only pods with scrape annotation
           - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
             action: keep
             regex: "true"
 
-          # Drop specific endpoints (port 5001 and 9500)
           - source_labels: [__address__]
             action: drop
             regex: ".*:(5001|9500)"
 
-
-          # Set metrics path from annotation
           - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
             action: replace
             target_label: __metrics_path__
             regex: (.+)
-          
-          # Set scrape address (IP:port) using pod IP and annotation
+
           - source_labels: [__meta_kubernetes_pod_ip, __meta_kubernetes_pod_annotation_prometheus_io_port]
             action: replace
             regex: (.+);(.+)
             replacement: $1:$2
             target_label: __address__
-          
-          # Add useful labels
+
           - source_labels: [__meta_kubernetes_namespace]
             target_label: namespace
           - source_labels: [__meta_kubernetes_pod_name]
@@ -106,7 +99,7 @@ spec:
             runAsUser: 0   ######
           args:
             - "--config.file=/etc/prometheus/prometheus.yml"
-            - "--storage.tsdb.path=/prometheus"
+            - "--storage.tsdb.path=/prometheus/"
             - "--web.external-url=/prometheus/"
             - "--web.route-prefix=/prometheus/"          
           ports:
@@ -135,7 +128,7 @@ spec:
     app: prometheus
   ports:
     - protocol: TCP
-      port: 80
+      port: 9090
       targetPort: 9090
   type: ClusterIP
 ---
@@ -158,7 +151,7 @@ spec:
               service:
                 name: prometheus
                 port:
-                  number: 80
+                  number: 9090
 # ---
 # apiVersion: rbac.authorization.k8s.io/v1
 # kind: Role
