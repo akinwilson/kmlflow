@@ -245,9 +245,11 @@ if __name__=="__main__":
         # For serving purposed used by the MLFlow server to construct serving image using FastAPI framework
         class QuestionAnsweringModel(mlflow.pyfunc.PythonModel):
             def load_context(self, context):
+                self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
                 self.tokenizer = tokenizer.from_pretrained(context.artifacts["tokenizer"])
                 # self.tokenizer.to(device)
                 self.model = model.from_pretrained(context.artifacts["model"])
+                self.model.to(self.device)
             
             def predict(self, context, model_input : pd.DataFrame):
                 input_text = model_input.to_records()[0]  # Extract string safely

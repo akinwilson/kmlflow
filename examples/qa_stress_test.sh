@@ -1,18 +1,26 @@
 #!/bin/bash
 
+# script allows you to quickly test out an deployed using ../app/releases/release.py endpoint
+# with random requests. 
+
 # Check if the model_tag argument is provided
 if [ -z "$1" ]; then
   echo "Usage: $0 <model_tag>"
   exit 1
 fi
 
-# Model tag (provided as an argument)
+# Model tag 
 model_tag=$1
+
+# colors and formatting 
+MAGENTA="\033[35m"
+BOLD="\033[1m"
+RESET="\033[0m"
 
 # Fixed duration for the loop (10 seconds)
 end_time=$((SECONDS + 10))
 
-# List of questions (embedded in the script)
+# List of questions 
 questions=(
   "What is the capital of Japan?"
   "How does blockchain work?"
@@ -136,17 +144,46 @@ questions=(
   "What are the key components of cloud computing?"
 )
 
+# Counter for the total number of queries
+query_count=0
+
 # Loop for 10 seconds
 while [ $SECONDS -lt $end_time ]; do
   # Iterate over each question and send the curl request
   for question in "${questions[@]}"; do
-    curl -X 'POST' \
+    # Print the question
+    echo "Q: $question"
+
+    # Send the curl request and capture the response
+    response=$(curl -s -X 'POST' \
       "http://192.168.49.2/$model_tag/v2/models/$model_tag/infer" \
       -H 'accept: application/json' \
       -H 'Content-Type: application/json' \
       -d '{
         "question": "'"$question"'"
-      }'
+      }')
+
+    # Extract the answer from the JSON response using jq
+    answer=$(echo "$response" | jq -r '.answer')
+
+    # Print the answer
+    echo "A: $answer"
     echo "" # Add a newline for better readability
+
+    # Increment the query counter
+    query_count=$((query_count + 1))
+
+    # Break the loop if the time is up
+    if [ $SECONDS -ge $end_time ]; then
+      break 2 # Break both the inner and outer loops
+    fi
   done
 done
+
+# Calculate and print QPS
+qps=$(echo "scale=2; $query_count / 10" | bc)
+echo ""
+printf -v formatted_qps "%0.2f" "$qps"  # Ensure leading zero
+echo -e "${BOLD}${MAGENTA}Queries per second (QPS): $formatted_qps qps${RESET}"
+echo ""
+echo ""

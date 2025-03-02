@@ -67,10 +67,12 @@ with open(root / "api_examples.json", "w") as f:
 # for ease of use with downstream with FastAPI
 class QuestionAnsweringModel(mlflow.pyfunc.PythonModel):
     def load_context(self, context):
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.tokenizer = T5Tokenizer.from_pretrained(context.artifacts["tokenizer"])
         # self.tokenizer.to(device)
         self.model = T5ForConditionalGeneration.from_pretrained(context.artifacts["model"])
-    
+        self.model.to(self.device)
+
     def predict(self, context, model_input : pd.DataFrame):
         input_text = model_input.to_records()[0]  # Extract string safely
         inputs = self.tokenizer(input_text[1], return_tensors="pt")
