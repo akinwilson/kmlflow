@@ -8,8 +8,10 @@
 ├── fit.py # model  which hyperparameter optimisation is applied to, used internally by Katib framework inside of akinolawilson/pytorch-train-gpu:latest
 ├── proposal.py # Script proposes an experiment, made up of trials, demonstrating the HPO framework and options 
 ├── publish.py # Script published an serving image using the MLFlow workflow. 
+├── qa_stress_test.sh # script to load test q and a exampled endpoint. Usage:./qa_stress_test.sh 4fd366b0
 └── track.py # Demonstrates the tracking an trail of an experiment using the MLFlow framework
 ```
+
 
 ## Building HPO container 
 
@@ -63,6 +65,16 @@ python3 fit.py --fast-api-title 'T5 Question and Answering' \
               --dropout-rate 0.2936841282912577 
 
 ```
+
+
+## Stress test endpoint 
+If you have a question and answering endpoint deployed like generate in `publish.py`, called `4fd366b0`,  and want to put it under load indefinitely, run 
+```bash 
+while true; do ./qa_stress_test.sh 4fd366b0; sleep 5; done
+```
+This will send the endpoint questions for 10 seconds, reporting the [QPS](https://en.wikipedia.org/wiki/Queries_per_second) following those 10 seconds, sleeps for 5 seconds before repeating the script. 
+
+
 ## Iterating server image and deploying/retracting to/from cluster
 
 We want to capture the output image URI from say, the execution of `publish.py`, we could run 
