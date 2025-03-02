@@ -1,5 +1,5 @@
 ---
-## Pod Monitor
+# Pod Monitor
 apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
 metadata:
@@ -12,8 +12,10 @@ spec:
   podMetricsEndpoints:
     - port: "http"  # Match the container port name
       path: /prometheus
+      interval: 15s  # Add scrape interval
   namespaceSelector:
-    any: true
+    matchNames:
+      - models
 ---
 ## Service Monitor
 apiVersion: monitoring.coreos.com/v1

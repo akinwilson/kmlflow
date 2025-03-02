@@ -15,6 +15,37 @@ spec:
   namespaceSelector:
     any: true
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: seldon-dashboard-{{ model_name }}  # Model-specific naming
+  namespace: monitoring  # Grafana is in monitoring, so keep it here
+  labels:
+    grafana_dashboard: "1"  # Sidecar will detect this
+data:
+  {{ model_name }}-dashboard.json: |
+    {
+      "dashboard": {
+        "uid": "{{ model_name }}",  # Unique ID for Grafana
+        "title": "Seldon Model Monitoring - {{ model_name }}",
+        "schemaVersion": 16,
+        "version": 1,
+        "panels": [
+          {
+            "title": "Request Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(seldon_api_executor_server_requests_total{deployment='chag36aX'}[1m])",
+                "legendFormat": "{{deployment}}"
+              }
+            ]
+          }
+        ]
+      },
+      "overwrite": true
+    }
+---
 ## Seldon Deployment
 apiVersion: machinelearning.seldon.io/v1
 kind: SeldonDeployment
@@ -51,7 +82,6 @@ spec:
                     value: "/{{ model_name }}"
                   - name: UVICORN_FORWARDED_ALLOW_IPS
                     value: "*"
-
                 livenessProbe:
                   httpGet:
                     path: /v2/health/live

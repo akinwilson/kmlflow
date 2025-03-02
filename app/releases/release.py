@@ -1,4 +1,33 @@
 #!/usr/bin/env python3
+
+# Author: Akin Antony Wilson
+# Contact: akinola.antony.wilson@gmail.com
+# Institution: University of Nottingham, UK 
+# Version: 1.0.0
+# Date: 01-03-2025
+
+"""
+This tool is a helper for managing the deployment of a model to a local cluster using the Seldon Core workflow
+The templating engine jinja is used to compile a template corresponding to the release of a model, along with
+a dashboard to Grafana for the released model and an exposed endpoint. The deployment manifest template 
+is found in templates/model_release.yaml.j2. The script handles both the release or retraction of a model from 
+the field. 
+
+The compiled manifest are supposed to be pickup by ArgoCD during push to the main branch and ArgoCD is 
+configured to look for a folder containing the path releases/models. Hence The script below ensures 
+the deployed manifests are saved in this location. 
+
+Currently, rather than applying the deployment to the cluster via the GitOps route, the k8s client is used 
+below to update configMaps required to be alter belonging to Seldon, and used a subprocess call to kubectl 
+to either deploy or delete deployments
+
+The script currently only handles default model releases, templates for AB, shadow and canary deployments 
+still need to be created. 
+"""
+
+
+
+
 import jinja2
 import argparse
 import json
@@ -109,7 +138,7 @@ class InferenceServerManager:
         """
         Applies all model deployment manifests in `releases/models` folder 
         """
-        command = ["kubectl", "apply", "-f", str(self.model_dir) + "/" ]
+        command = ["kubectl", "apply", "-f", str(self.model_dir) + f"/{self.tag}.yaml" ]
         result = subprocess.run(command, capture_output=True, text=True)
         if result.returncode == 0:
             release_yamls = [str(x).split("/")[-1] for x in list(self.model_dir.iterdir())]
@@ -125,7 +154,7 @@ class InferenceServerManager:
         """
         Deletes Kubernetes resources using `kubectl delete -f`.
         """
-        command = ["kubectl", "delete", "-f", str(self.model_dir) + "/"]
+        command = ["kubectl", "delete", "-f", str(self.model_dir) + f"/{self.tag}.yaml"]
         result = subprocess.run(command, capture_output=True, text=True)
         if result.returncode == 0:
             deleted_release_yamls = [str(x).split("/")[-1] for x in list(self.model_dir.iterdir())]
