@@ -1,0 +1,106 @@
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: jupyter
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: jupyter-pv
+  namespace: jupyter
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: standard
+  hostPath:
+    path: /data/jupyter
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jupyter-pvc
+  namespace: jupyter
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jupyterlab
+  namespace: jupyter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jupyterlab
+  template:
+    metadata:
+      labels:
+        app: jupyterlab
+    spec:
+      containers:
+      - name: jupyterlab
+        image: jupyter/tensorflow-notebook:latest
+        ports:
+        - containerPort: 8888
+        env:
+        - name: JUPYTERHUB_SERVICE_PREFIX
+          value: "/jupyter/"
+        command: ["start-notebook.sh"]
+        args:
+          - "--NotebookApp.base_url=/jupyter"
+          - "--NotebookApp.allow_remote_access=True"
+          - "--NotebookApp.port=8888"
+          - "--NotebookApp.trust_xheaders=True"
+          - "--NotebookApp.token=''"  # Disable token authentication
+          - "--NotebookApp.password=''"  # Disable password authentication
+        volumeMounts:
+        - name: jupyter-storage
+          mountPath: /home/notebooks
+      volumes:
+      - name: jupyter-storage
+        persistentVolumeClaim:
+          claimName: jupyter-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jupyterlab-service
+  namespace: jupyter
+spec:
+  selector:
+    app: jupyterlab
+  ports:
+  - protocol: TCP
+    port: 8888
+    targetPort: 8888
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: jupyterlab-ingress
+  namespace: jupyter
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /jupyter/$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /jupyter(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: jupyterlab-service
+            port:
+              number: 8888

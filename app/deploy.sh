@@ -72,7 +72,7 @@ echo ""
 
 # Ensure /data exists inside Minikube
 echo "Ensuring /data directory exists inside Minikube..."
-minikube ssh -- "sudo mkdir -p /data/katib && sudo mkdir -p /data/argo && sudo mkdir -p /data/prometheus && sudo mkdir -p /data/grafana  && sudo chown -R 472:472 /data/grafana && sudo mkdir -p /data/meili && sudo mkdir -p /data/mlflow && sudo mkdir -p /data/minio && sudo chmod -R 777 /data"
+minikube ssh -- "sudo mkdir -p /data/katib && sudo mkdir -p /data/jupyter && sudo mkdir -p /data/kfp && sudo mkdir -p /data/argo && sudo mkdir -p /data/prometheus && sudo mkdir -p /data/grafana  && sudo chown -R 472:472 /data/grafana && sudo mkdir -p /data/meili && sudo mkdir -p /data/mlflow && sudo mkdir -p /data/minio && sudo chmod -R 777 /data"
 echo "/data directory is ready."
 echo ""
 echo ""
@@ -199,6 +199,14 @@ echo "Install Grafana ...."
 kubectl apply -f "$SCRIPT_DIR/grafana/deployment.yaml"
 echo ""
 echo ""
+
+echo "Install JupyterLab ..."
+kubectl apply -f "$SCRIPT_DIR/jupyter/deployment.yaml"
+echo ""
+echo ""
+
+# echo "Install kfp ...."
+# kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/application/master/config/crd/bases/app.k8s.io_applications.yaml
 
 
 echo "Install Prometheus ...."
