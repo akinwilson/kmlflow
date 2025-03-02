@@ -49,7 +49,7 @@ data:
 
           - source_labels: [__address__]
             action: drop
-            regex: ".*:(5001|9500)"
+            regex: ".*:(5001|9500|8000)"
 
           - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
             action: replace
