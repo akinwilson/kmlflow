@@ -35,47 +35,6 @@ spec:
       storage: 5Gi
   storageClassName: standard
 ---
-# apiVersion: apps/v1
-# kind: Deployment
-# metadata:
-#   name: grafana
-#   namespace: monitoring
-#   labels:
-#     app: grafana
-# spec:
-#   replicas: 1
-#   selector:
-#     matchLabels:
-#       app: grafana
-#   template:
-#     metadata:
-#       labels:
-#         app: grafana
-#     spec:
-#       serviceAccountName: monitoring-sa
-#       containers:
-#         - name: grafana
-#           image: grafana/grafana:latest
-#           securityContext: ### only for debugging 
-#             runAsUser: 0   ### 
-#           ports:
-#             - containerPort: 3000
-#           env:
-#             - name: GF_SERVER_ROOT_URL
-#               value: "http://192.168.49.2/grafana/"
-#             - name: GF_SERVER_SERVE_FROM_SUB_PATH
-#               value: "true"
-#             - name: GF_SECURITY_ALLOW_EMBEDDING
-#               value: "true"
-#             - name: GF_SECURITY_SKIP_VERIFY
-#               value: "true" 
-#           volumeMounts:
-#             - mountPath: /var/lib/grafana
-#               name: grafana-storage
-#       volumes:
-#         - name: grafana-storage
-#           persistentVolumeClaim:
-#             claimName: grafana-pvc
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -117,6 +76,12 @@ spec:
               name: grafana-storage
             - mountPath: /var/lib/grafana/dashboards
               name: grafana-dashboards
+            - mountPath: /etc/grafana/provisioning/datasources
+              name: grafana-datasources
+              readOnly: true
+            - mountPath: /etc/grafana/provisioning/dashboards
+              name: grafana-dashboard-providers
+              readOnly: true
         - name: grafana-watcher  # Sidecar container
           image: kiwigrid/k8s-sidecar:latest
           env:
@@ -131,9 +96,6 @@ spec:
               name: grafana-storage
             - mountPath: /var/lib/grafana/dashboards
               name: grafana-dashboards
-            - mountPath: /etc/grafana/provisioning/dashboards
-              name: grafana-dashboard-providers
-              readOnly: true
       volumes:
         - name: grafana-storage
           persistentVolumeClaim:
@@ -143,6 +105,9 @@ spec:
         - name: grafana-dashboard-providers
           configMap:
             name: grafana-dashboard-providers
+        - name: grafana-datasources
+          configMap:
+            name: grafana-datasources
 ---
 apiVersion: v1
 kind: Service
@@ -196,3 +161,22 @@ data:
         updateIntervalSeconds: 10
         options:
           path: /var/lib/grafana/dashboards  
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: monitoring  # Replace with your namespace
+  labels:
+    grafana_datasource: "1"
+data:
+  prometheus.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus.monitoring.svc.cluster.local:9090/prometheus  # Updated URL
+        isDefault: true
+        version: 1
+        editable: false
