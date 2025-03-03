@@ -4,11 +4,12 @@
 
 ## Overview 
 
-Kmlflow or also known as **K5W** is and end to end Machine Learning Operations platform. It is a platform that provides an experiment tracking, hyperparameter optimisation and model registry framework, which allows end users to deploy models via a gitops-orientated workflow to the platform using a variety of deployment strategies, entirely automated following the fhe training of a model. The microservices making up the platform are [Katib](https://www.kubeflow.org/docs/components/katib/overview/); the [hyperparameter optimisation](https://en.wikipedia.org/wiki/Hyperparameter_optimization) tracking framework, [MLFlow](https://mlflow.org/) used as a model registry, artifact store and experiment tracking service and deployment management tool, complemented by [MinIO](https://min.io/) used as the object store for the MLFlow server and general persistence. In addition to these services, [ArgoCD](https://argo-cd.readthedocs.io/en/stable/) and [Seldon Core](https://docs.seldon.io/projects/seldon-core/en/latest/index.html) are deployed to allow for a [GitOps](https://about.gitlab.com/topics/gitops/)-orientated model deployment workflow and extensive serving strategy frameworks. To monitor models deployed to the cluster, [Grafana](https://grafana.com/) and [Prometheus](https://prometheus.io/docs/introduction/overview/). A [cluster-wide dashboard](https://github.com/kubernetes/dashboard) is to deployed to provide real-time observability over the entire system and finally a centralised UI, [Kmlflow](https://192.168.49.2/kmlflow), to make the platform user-friendly.  
+Kmlflow abbreviated to **K5W**, is an end-to-end Machine Learning Engineering, Research and Operations platform. Hosted on Kubernetes, it includes and integrated development environment, provides an experiment tracking, hyperparameter optimisation and model registry framework, along side automated deployment and monitoring techniques, which allows end users to, research, train and deploy models via a gitops-orientated workflow in a stream-lined and repeatable manner from a centralised control point. Models deployed are hosted on the platform itself. A variety of deployment strategies are offered like shadow deployments, A/B, canary, blue-green etc. The serving aspect being entirely automated following the, research, development, training and optimisation of models. A service for issuing, maintaining and monitoring directed acyclic graphs composing workloads is also provided. The microservices making up the platform are [Katib](https://www.kubeflow.org/docs/components/katib/overview/); the [hyperparameter optimisation](https://en.wikipedia.org/wiki/Hyperparameter_optimization) framework, [MLFlow](https://mlflow.org/) used as a model registry, artifact store and experiment tracking service and deployment management tool, complemented by [MinIO](https://min.io/) used as the object store for the MLFlow server and general persistence across the cluster. [Jupyter](https://jupyter.org/) is deployed to provide an integrated development experience alongside [KFP](https://www.kubeflow.org/docs/components/pipelines/) to allow for the construction, management and monitoring of DAGs across the cluster. [ArgoCD](https://argo-cd.readthedocs.io/en/stable/) and [Seldon Core](https://docs.seldon.io/projects/seldon-core/en/latest/index.html) are deployed to allow for a [GitOps](https://about.gitlab.com/topics/gitops/)-orientated model deployment paradigm and extensive serving strategy frameworks via both microservices respectively. To monitor live models, [Grafana](https://grafana.com/) and [Prometheus](https://prometheus.io/docs/introduction/overview/) are deployed to visualise and scrape keep serving metrics respectively. A [cluster-wide dashboard](https://github.com/kubernetes/dashboard) is to deployed to provide real-time observability over the entire platform and finally a centralised UI, [Kmlflow](https://192.168.49.2/kmlflow) is provided, to make the platform user-friendly.  
+
 
 The main tools used to achieve the deployment of the platform are [Docker](https://www.docker.com/), [Minikube](https://minikube.sigs.k8s.io/docs/) and [Kubectl](https://kubernetes.io/docs/reference/kubectl/). 
 
-In addition to the infrastructure and microservices deployment, the `/examples` folder demonstrates how to use K5W as a platform, programmatically via clients to its microservices like MLFlow. Katib, Prometheus etc, and through the [K5W UI](https://192.168.49.2/kmlflow).
+In addition to the infrastructure and microservices deployment code, the `/examples` folder demonstrates how to use [K5W](https://github.com/akinwilson/kmlflow) as a platform, programmatically via clients to its microservices like MLFlow. Katib, Prometheus, KFP etc, complemented by events and jobs visible through the [K5W UI](https://192.168.49.2/kmlflow), like generated dashboards corresponding to deployed models, live testable endpoints trial and experiment records, etc. 
 
 
 ## Installation
@@ -53,10 +54,11 @@ username=minioaccesskey
 password=miniosecretkey123
 ```
 
-To see the continuous development platform in action find [ArgoCD's UI](http://192.168.49.2/argocd), you will be required to provide login credentials which are `username=admin` and the password can be retrieved via 
+To see the continuous development platform in action find [ArgoCD's UI](http://192.168.49.2/argocd), you *may* will be required to provide login credentials. If so, these  are `username=admin` and the password can be retrieved via 
 ```bash
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 ```
+
 **Note** when logging into the ArgoCD UI through the centralised [Kmlflow UI](https://192.168.49.2/kmlflow), you may need to refresh the page in order for the ArgoCD UI to appear after logging in. 
 
 To destroy the cluster and therewith remove the platform, run:
@@ -142,11 +144,11 @@ usage: fit.py [-h] [--vocab-size VOCAB_SIZE] [--d-model D_MODEL] [--d-kv D_KV]
 ```
 
 
-## To do Feb 20 2025
+## To do March 1 2025
 
 
-- [ ] Update grafana to include sidcar for automatic config detections 
-
+- [ ] Update grafana to include sidecar for automatic dashboard config detections and updating 
+- [ ] figure out why models built with `proposal.py` can not be served, but `publish.py` canbe. 
 - [ ] Reduce current serving example down to correct template 
 - [ ] Add seldon default grafana dashboard to model release template
 - [ ] create AB testing deployment template and associated dashboard 
