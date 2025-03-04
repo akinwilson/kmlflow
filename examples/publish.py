@@ -1,7 +1,8 @@
 import os
 import sys 
 import mlflow
-import json 
+import json
+import shutil
 from pathlib import Path
 from transformers import T5ForConditionalGeneration, T5Tokenizer
 from mlflow.models import ModelSignature
@@ -66,10 +67,12 @@ with open(root / "api_examples.json", "w") as f:
 # for ease of use with downstream with FastAPI
 class QuestionAnsweringModel(mlflow.pyfunc.PythonModel):
     def load_context(self, context):
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.tokenizer = T5Tokenizer.from_pretrained(context.artifacts["tokenizer"])
         # self.tokenizer.to(device)
         self.model = T5ForConditionalGeneration.from_pretrained(context.artifacts["model"])
-    
+        self.model.to(self.device)
+
     def predict(self, context, model_input : pd.DataFrame):
         input_text = model_input.to_records()[0]  # Extract string safely
         inputs = self.tokenizer(input_text[1], return_tensors="pt")
@@ -108,6 +111,7 @@ with mlflow.start_run(experiment_id=experiment.experiment_id, description=run_de
 
     # set tags inside the run context
     mlflow.set_tag("model_name", model_name)
+    mlflow.set_tag("run_id", run_id)
     
     print("\n\n")
     print(f"Run ID: {run_id}")
@@ -118,14 +122,12 @@ with mlflow.start_run(experiment_id=experiment.experiment_id, description=run_de
 
     if PUBLISH:
         # using local docker client to publish image to remote registry
-        image_name = f"{os.getenv("DOCKER_USERNAME", "akinolawilson")}/{model_name}:{run_id[:8]}"
-        mlflow.set_tag("serving_container", image_name)
-        mlflow.set_tag("local_inference", f"docker pull {image_name} && docker run --network host --rm {image_name}")
+        image_name = f"{os.getenv("DOCKER_USERNAME", "akinolawilson")}/{model_name}:{run_id[-8:]}"
         # api environment variables.
         api_env=f"""
         FASTAPI_TITLE={title}
         FASTAPI_DESC={experiment_description}
-        FASTAPI_VERSION={run_id[:8]}
+        FASTAPI_VERSION={run_id[-8:]}
         MLFLOW_MODEL_URI={model_uri}
         AWS_ACCESS_KEY_ID={os.getenv("AWS_ACCESS_KEY_ID","minioaccesskey")}
         AWS_SECRET_ACCESS_KEY={os.getenv("AWS_SECRET_ACCESS_KEY","miniosecretkey123")}
@@ -143,13 +145,11 @@ with mlflow.start_run(experiment_id=experiment.experiment_id, description=run_de
         dockerfile_content = f"""
         FROM python:{".".join(sys.version.split(" ")[0].split(".")[:-1])} 
         WORKDIR /usr/src/app
-
-        RUN pip install fastapi pydantic uvicorn mlflow torch transformers python-dotenv sentencepiece boto3
+        RUN pip install fastapi pydantic uvicorn mlflow torch transformers python-dotenv sentencepiece boto3 pynvml psutil prometheus_client httpx
         COPY api.py .
         COPY api_env .
         COPY api_examples.json .
-        
-        CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8080"]
+        CMD ["python3", "/usr/src/app/api.py", "--serving-port", "9000"]
         """
 
         with open(root / "Dockerfile", "w") as f:
@@ -161,5 +161,16 @@ with mlflow.start_run(experiment_id=experiment.experiment_id, description=run_de
         # clean up 
         os.remove(root / "Dockerfile")
         os.remove(root / "api_examples.json")
-        os.remove(root / "api_env.json")
+        os.remove(root / "api_env")
+
+        mlflow.set_tag("serving_container", image_name)
+        mlflow.set_tag("local_inference", f"docker run --network host --rm {image_name}")
+        mlflow.end_run(status="FINISHED")
+    mlflow.end_run(status="FINISHED")
+
+    # removing local artifacts 
+    if os.path.exists("tokenizer"):
+        shutil.rmtree("tokenizer")
         
+    if os.path.exists("model"):
+        shutil.rmtree("model") 

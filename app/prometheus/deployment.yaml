@@ -36,9 +36,42 @@ data:
       scrape_interval: 15s
 
     scrape_configs:
+      - job_name: 'seldon-models'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - models
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: "true"
+
+          - source_labels: [__address__]
+            action: drop
+            regex: ".*:(5001|9500|8000)"
+
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+
+          - source_labels: [__meta_kubernetes_pod_ip, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: (.+);(.+)
+            replacement: $1:$2
+            target_label: __address__
+
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            target_label: service
+
       - job_name: 'prometheus'
         static_configs:
-          - targets: ['localhost:9090']
+          - targets: ['prometheus.monitoring.svc.cluster.local:9090']
 
 ---
 apiVersion: apps/v1
@@ -66,7 +99,9 @@ spec:
             runAsUser: 0   ######
           args:
             - "--config.file=/etc/prometheus/prometheus.yml"
-            - "--storage.tsdb.path=/prometheus"
+            - "--storage.tsdb.path=/prometheus/"
+            - "--web.external-url=/prometheus/"
+            - "--web.route-prefix=/prometheus/"          
           ports:
             - containerPort: 9090
           volumeMounts:
@@ -93,6 +128,51 @@ spec:
     app: prometheus
   ports:
     - protocol: TCP
-      port: 80
+      port: 9090
       targetPort: 9090
   type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prometheus-ingress
+  namespace: monitoring
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /prometheus/$2
+    nginx.ingress.kubernetes.io/use-regex: "true" # enable regex for path matching
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /prometheus(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: prometheus
+                port:
+                  number: 9090
+# ---
+# apiVersion: rbac.authorization.k8s.io/v1
+# kind: Role
+# metadata:
+#   name: prometheus-scrape
+#   namespace: models
+# rules:
+#   - apiGroups: [""]
+#     resources: ["pods"]
+#     verbs: ["get", "list", "watch"]
+# ---
+# apiVersion: rbac.authorization.k8s.io/v1
+# kind: RoleBinding
+# metadata:
+#   name: prometheus-scrape
+#   namespace: models
+# roleRef:
+#   apiGroup: rbac.authorization.k8s.io
+#   kind: Role
+#   name: prometheus-scrape
+# subjects:
+#   - kind: ServiceAccount
+#     name: monitoring-sa
+#     namespace: monitoring

@@ -11,3 +11,7 @@ Dockerfile
 fit.log
 .env
 db.sqlite3
+.pytest_cache/
+tls.key
+tls.crt
+*/argocd/cm.yaml

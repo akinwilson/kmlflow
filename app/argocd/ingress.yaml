@@ -11,6 +11,10 @@ metadata:
     nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"  # Argo CD serves HTTPS
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+      - 192.168.49.2
+      secretName: argocd-tls
   rules:
     - http:
         paths:
@@ -21,24 +25,3 @@ spec:
                 name: argocd-server
                 port:
                   number: 443
-# apiVersion: networking.k8s.io/v1
-# kind: Ingress
-# metadata:
-#   name: argocd-ingress
-#   namespace: argocd
-#   annotations:
-#     nginx.ingress.kubernetes.io/ssl-redirect: "true"
-#     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-#     nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
-# spec:
-#   ingressClassName: nginx
-#   rules:
-#     - http:
-#         paths:
-#           - path: /argo
-#             pathType: Prefix
-#             backend:
-#               service:
-#                 name: argocd-server
-#                 port:
-#                   number: 443

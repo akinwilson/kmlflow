@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: "https://github.com/akinwilson/kmlflow.git"
     targetRevision: main
-    path: app/releases  # Folder containing SeldonDeployment YAMLs
+    path: app/releases/models  # Folder containing SeldonDeployment YAMLs
   destination:
     server: https://kubernetes.default.svc
     namespace: models
@@ -16,3 +16,10 @@ spec:
     automated:
       prune: true  # Remove old resources
       selfHeal: true  # Fix drift automatically
+  # ignoreDifferences:
+  #   - group: machinelearning.seldon.io
+  #     kind: SeldonDeployment
+  #     jsonPointers:
+  #       - /metadata/annotations
+  #       - /metadata/labels
+  #       - /metadata/managedFields

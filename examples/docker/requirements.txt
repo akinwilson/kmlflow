@@ -1,3 +1,5 @@
+# these requirments should be passed over during the serving image construction, right now, 
+# its just a list in the dockerfile string. Integrating promethus 
 mlflow==2.19.0
 lightning==2.5.0.post0
 torch
@@ -13,5 +15,6 @@ sentencepiece==0.2.0
 argparse-dataclass==2.0.0 
 pynvml==12.0.0
 psutil==7.0.0
+prometheus_client==0.21.1
 requests==2.32.3
 git+https://github.com/akinwilson/babl.git@main#egg=babl&subdirectory=app/models

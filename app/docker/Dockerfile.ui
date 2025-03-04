@@ -1,5 +1,5 @@
 FROM python:3.9
 WORKDIR /usr/src/app
-RUN pip install django
+RUN pip install django kubernetes
 COPY ./ui/kmlflow/ ./ 
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

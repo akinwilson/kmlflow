@@ -72,7 +72,7 @@ echo ""
 
 # Ensure /data exists inside Minikube
 echo "Ensuring /data directory exists inside Minikube..."
-minikube ssh -- "sudo mkdir -p /data/katib && sudo mkdir -p /data/argo && sudo mkdir -p /data/prometheus && sudo mkdir -p /data/grafana  && sudo chown -R 472:472 /data/grafana && sudo mkdir -p /data/mlflow && sudo mkdir -p /data/minio && sudo chmod -R 777 /data"
+minikube ssh -- "sudo mkdir -p /data/katib && sudo mkdir -p /data/jupyter && sudo mkdir -p /data/kfp && sudo mkdir -p /data/argo && sudo mkdir -p /data/prometheus && sudo mkdir -p /data/grafana  && sudo chown -R 472:472 /data/grafana && sudo mkdir -p /data/meili && sudo mkdir -p /data/mlflow && sudo mkdir -p /data/minio && sudo chmod -R 777 /data"
 echo "/data directory is ready."
 echo ""
 echo ""
@@ -98,6 +98,46 @@ done
 echo "Ingress NGINX controller is ready."
 echo ""
 echo ""
+
+echo "Customizing ingress headers ..."
+kubectl apply -f "$SCRIPT_DIR/nginx/header.yaml"
+kubectl get configmap ingress-nginx-controller -n ingress-nginx -o yaml | yq eval '.data += {"add-headers": "/etc/nginx/custom-headers.conf"}' - > "$SCRIPT_DIR/nginx/cm.yaml"
+kubectl apply -f "$SCRIPT_DIR/nginx/cm.yaml"
+kubectl patch deployment ingress-nginx-controller -n ingress-nginx --type=json -p='[
+  {
+    "op": "add",
+    "path": "/spec/template/spec/volumes/-",
+    "value": {
+      "name": "custom-headers",
+      "configMap": {
+        "name": "custom-nginx-headers"
+      }
+    }
+  },
+  {
+    "op": "add",
+    "path": "/spec/template/spec/containers/0/volumeMounts/-",
+    "value": {
+      "name": "custom-headers",
+      "mountPath": "/etc/nginx/custom-headers.conf",
+      "subPath": "custom-headers.conf"
+    }
+  }
+]'
+
+
+kubectl rollout restart deployment ingress-nginx-controller -n ingress-nginx
+
+echo "Waiting for Ingress NGINX controller to be ready..."
+while ! kubectl get pods -n ingress-nginx -l app.kubernetes.io/name=ingress-nginx -o jsonpath='{.items[*].status.conditions[?(@.type=="Ready")].status}' | grep -q "True"; do
+  echo "Ingress NGINX controller not ready yet, waiting..."
+  sleep 5
+done
+echo "Ingress NGINX controller is ready."
+echo ""
+echo ""
+
+
 
 echo "Install Katib ..."
 kubectl apply -k "github.com/kubeflow/katib.git/manifests/v1beta1/installs/katib-standalone?ref=master"
@@ -150,7 +190,7 @@ echo ""
 
 
 
-echo "Install kmlflow UI ...."
+echo "Install K5W UI ...."
 kubectl apply -f "$SCRIPT_DIR/ui/deployment.yaml"
 echo ""
 echo ""
@@ -160,16 +200,29 @@ kubectl apply -f "$SCRIPT_DIR/grafana/deployment.yaml"
 echo ""
 echo ""
 
+echo "Install JupyterLab ..."
+kubectl apply -f "$SCRIPT_DIR/jupyter/deployment.yaml"
+echo ""
+echo ""
 
-echo "Install Promethus ...."
+# echo "Install kfp ...."
+# kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/application/master/config/crd/bases/app.k8s.io_applications.yaml
+
+
+echo "Install Prometheus ...."
 kubectl apply -f "$SCRIPT_DIR/prometheus/deployment.yaml"
+curl https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/refs/heads/main/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml | kubectl apply -f -
+curl https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_podmonitors.yaml | kubectl apply -f -
 echo ""
 echo ""
 
+
+
+# need to delete validating webhook configuration or remove it from being created 
 echo "Install seldon core ...."
 kubectl apply -f "$SCRIPT_DIR/seldon/deployment.yaml"
-kubectl apply -f "$SCRIPT_DIR/seldon/ns.yaml"
-
+kubectl apply --server-side=true --force-conflicts -f "$SCRIPT_DIR/seldon/seldonDeploymentCRD.yaml"
+# kubectl apply -f "$SCRIPT_DIR/seldon/ns.yaml"
 echo ""
 echo ""
 
@@ -177,11 +230,18 @@ echo "Installing ArgoCD ..."
 
 kubectl apply -f "$SCRIPT_DIR/argocd/ns.yaml"
 kubectl apply -f "$SCRIPT_DIR/argocd/secrets.yaml"
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl patch cm argocd-cmd-params-cm -n argocd --type merge -p '{"data": {"server.rootpath": "/argo/"}}'
+kubectl get cm argocd-cm -n argocd -o yaml | yq eval '.data += {"dex.config": "web:\n  headers:\n    X-Frame-Options: \"ALLOWALL\"", "users.anonymous.enabled": "true", "server.x-frame-options": "ALLOWALL"}' - > "$SCRIPT_DIR/argocd/cm.yaml"
+kubectl apply -f "$SCRIPT_DIR/argocd/cm.yaml"
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout $SCRIPT_DIR/argocd/tls.key -out $SCRIPT_DIR/argocd/tls.crt \
+  -subj "/CN=192.168.49.2" \
+  -addext "subjectAltName = IP:192.168.49.2"
+
+kubectl create secret tls argocd-tls --key="$SCRIPT_DIR/argocd/tls.key" --cert="$SCRIPT_DIR/argocd/tls.crt" -n argocd
 kubectl apply -f "$SCRIPT_DIR/argocd/ingress.yaml"
-# change the server to be hosted under path /argo
-curl -s https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml | \
-yq eval '(select(.kind == "Deployment" and .metadata.name == "argocd-server").spec.template.spec.containers[0].args) += ["--rootpath=/argo"]' - | \
-kubectl apply -f - -n argocd
+
 kubectl apply -f "$SCRIPT_DIR/argocd/app.yaml"
 echo ""
 echo ""
@@ -253,18 +313,14 @@ echo ""
 
 # Print the Ingress URLs for the services with color formatting
 
-echo "To view unified kmlflow dashboard:"
+echo "To view the K5W dashboard:"
 echo -e "${GREEN}https://192.168.49.2/kmlflow${RESET}"
-
 echo "To view the K8s cluster health head to:"
 echo -e "${GREEN}https://192.168.49.2/dashboard/#${RESET}"
-
 echo "To access Katib's user interface head to:"
 echo -e "${GREEN}https://192.168.49.2/katib${RESET}"
-
 echo "To access MLFlow's user interface head to:"
 echo -e "${GREEN}https://192.168.49.2/mlflow/#${RESET}"
-
 echo "To access ArgoCD's user interface head to:"
 echo -e "${GREEN}https://192.168.49.2/argo/${RESET}"
 echo ""
@@ -275,22 +331,27 @@ echo -e "username:${MAGENTA}admin${RESET}"
 echo -e "password:${MAGENTA}$ARGO_PW${RESET}"
 echo ""
 echo ""
-
-# echo "To access Grafana's user interface head to:"
-# echo -e "${GREEN}https://192.168.49.2/grafana/${RESET}"
-
+echo "To access Grafana's user interface head to:"
+echo -e "${GREEN}https://192.168.49.2/grafana/${RESET}"
+echo ""
+echo ""
+echo "To access the Grafana UI, you will need the username and password which are:"
+echo -e "username:${MAGENTA}admin${RESET}"
+echo -e "password:${MAGENTA}admin${RESET}"
+echo ""
+echo ""
+echo "To access Prometheus's user interface head to:"
+echo -e "${GREEN}https://192.168.49.2/prometheus/${RESET}"
 echo "To access MinIO's user interface for the bucket:"
 echo -e "${GREEN}http://192.168.49.2/minio/browser/mlflow-artifacts${RESET}"
 echo -e "${GREEN}http://192.168.49.2/minio/browser/data${RESET}"
 echo ""
 echo ""
-
 echo "To access the MinIO UI, you will need the username and password which are:"
 echo -e "username:${MAGENTA}minioaccesskey${RESET}"
 echo -e "password:${MAGENTA}miniosecretkey123${RESET}"
 echo ""
 echo ""
-
 echo "To access the dashboard, you will need a token for the user."
 echo -e "You can create a token via running the command: ${MAGENTA}kubectl create token user${RESET}"
 TOKEN=$(kubectl create token user) 
@@ -300,17 +361,12 @@ echo ""
 echo -e "${CYAN}$TOKEN${RESET}"
 echo ""
 echo ""
-
 # Complete the deployment
 echo "Deployment complete!"
 echo ""
 echo ""
-
-
-
 echo "Finally you will need to set up the minikube tunnel to your ingress of the cluster to make your services accessible."
 echo -e "Run the command: ${MAGENTA}minikube tunnel${RESET}"
 echo ""
 echo ""
-
 exit 0

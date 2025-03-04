@@ -54,7 +54,6 @@ metadata:
   name: kmlflow-ui-ingress
   namespace: ui
   annotations:
-    # nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   rules:
