@@ -3,12 +3,12 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
 metadata:
-  name: model-{{ model_name }}-monitor
+  name: model-19f69817-monitor
   namespace: monitoring
 spec:
   selector:
     matchLabels:
-      seldon-deployment-id: model-{{ model_name }}
+      seldon-deployment-id: model-19f69817
   podMetricsEndpoints:
     - port: "http"  # Match the container port name
       path: /prometheus
@@ -19,7 +19,7 @@ spec:
 apiVersion: machinelearning.seldon.io/v1
 kind: SeldonDeployment
 metadata:
-  name: model-{{ model_name }}
+  name: model-19f69817
   namespace: models
   annotations:
     seldon.io/no-storage-initializer: "true"
@@ -29,26 +29,26 @@ metadata:
 spec:
   protocol: v2
   predictors:
-    - name: predictor-{{ model_name }}
+    - name: predictor-19f69817
       replicas: 1
       graph:
-        name: model-{{ model_name }}
+        name: model-19f69817
         type: MODEL
         children: []
-        implementation: {{ model_name.upper() }}_SERVER
+        implementation: 19F69817_SERVER
       svcOrchSpec:
         env:
           - name: LOG_LEVEL
             value: DEBUG
           - name: ROOT_PATH
-            value: "/{{ model_name }}"
+            value: "/19f69817"
       componentSpecs:
         - spec:
             containers:
-              - name: model-{{ model_name }}
+              - name: model-19f69817
                 env:
                   - name: ROOT_PATH
-                    value: "/{{ model_name }}"
+                    value: "/19f69817"
                   - name: UVICORN_FORWARDED_ALLOW_IPS
                     value: "*"
                 livenessProbe:
@@ -80,7 +80,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: model-{{ model_name }}-docs-ingress
+  name: model-19f69817-docs-ingress
   namespace: models
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"  # Enable regex matching
@@ -92,18 +92,18 @@ spec:
     - http:
         paths:
           # API Documentation Endpoint
-          - path: /{{ model_name }}/docs(/|$)(.*)
+          - path: /19f69817/docs(/|$)(.*)
             pathType: ImplementationSpecific
             backend:
               service:
-                name: model-{{ model_name }}-predictor-{{ model_name }}-model-{{ model_name }} # seldon-models-model-{{ model_name }} ### model-{{ model_name }}-predictor-{{ model_name }}-model-{{ model_name }}
+                name: model-19f69817-predictor-19f69817-model-19f69817 # seldon-models-model-19f69817 ### model-19f69817-predictor-19f69817-model-19f69817
                 port:
                   number: 9000
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: model-{{ model_name }}-api-ingress
+  name: model-19f69817-api-ingress
   namespace: models
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"  # Enable regex matching
@@ -115,23 +115,23 @@ spec:
     - http:
         paths:
           # Prediction Endpoint
-          - path: /{{ model_name }}(/|$)(.*)
+          - path: /19f69817(/|$)(.*)
             pathType: ImplementationSpecific
             backend:
               service:
-                name: model-{{ model_name }}-predictor-{{ model_name }}-model-{{ model_name }}  # seldon-models-model-{{ model_name }} ### model-{{ model_name }}-predictor-{{ model_name }}-model-{{ model_name }}
+                name: model-19f69817-predictor-19f69817-model-19f69817  # seldon-models-model-19f69817 ### model-19f69817-predictor-19f69817-model-19f69817
                 port:
                   number: 9000
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: seldon-dashboard-{{ model_name }}
+  name: seldon-dashboard-19f69817
   namespace: monitoring
   labels:
     grafana_dashboard: "1"
 data:
-  {{ model_name }}-dashboard.json: |
+  19f69817-dashboard.json: |
     {
       "annotations": {
             "list": [
@@ -147,7 +147,7 @@ data:
               }
             ]
           },
-          "description": "This dashboard tracks key metrics for model {{ model_name }}, including inference requests, system resource usage, and performance.",
+          "description": "This dashboard tracks key metrics for model 19f69817, including inference requests, system resource usage, and performance.",
           "editable": true,
           "fiscalYearStartMonth": 0,
           "graphTooltip": 0,
@@ -159,11 +159,11 @@ data:
                 "name": "model_name",
                 "label": "Model Name",
                 "type": "constant",
-                "query": "{{ model_name }}",
+                "query": "19f69817",
                 "current": {
                   "selected": true,
-                  "text": "{{ model_name }}",
-                  "value": "{{ model_name }}"
+                  "text": "19f69817",
+                  "value": "19f69817"
                 }
               }
             ]
@@ -235,7 +235,7 @@ data:
                   "datasource": {
                     "type": "prometheus"
                   },
-                  "expr": "server_cpu_usage{service=~\"model-{{ model_name }}-predictor-{{ model_name }}-0-model-{{ model_name }}\"}",
+                  "expr": "server_cpu_usage{service=~\"model-19f69817-predictor-19f69817-0-model-19f69817\"}",
                   "legendFormat": "CPU %",
                   "refId": "A"
                 }
@@ -285,7 +285,7 @@ data:
                         "datasource": {
                             "type": "prometheus"
                         },
-                        "expr": "(server_total_memory_gigabytes{service=~\"model-{{ model_name }}-predictor-{{ model_name }}-0-model-{{ model_name }}\"} * server_memory_usage_gigabytes{service=~\"model-{{ model_name }}-predictor-{{ model_name }}-0-model-{{ model_name }}\"}) / 100",
+                        "expr": "(server_total_memory_gigabytes{service=~\"model-19f69817-predictor-19f69817-0-model-19f69817\"} * server_memory_usage_gigabytes{service=~\"model-19f69817-predictor-19f69817-0-model-19f69817\"}) / 100",
                         "legendFormat": "Used GB",
                         "refId": "A"
                     }
@@ -346,7 +346,7 @@ data:
                         "datasource": {
                             "type": "prometheus"
                         },
-                        "expr": "server_gpu_1_utilization{service=~\"model-{{ model_name }}-predictor-{{ model_name }}-0-model-{{ model_name }}\"}",
+                        "expr": "server_gpu_1_utilization{service=~\"model-19f69817-predictor-19f69817-0-model-19f69817\"}",
                         "legendFormat": "GPU %",
                         "refId": "A"
                     }
@@ -407,7 +407,7 @@ data:
                         "datasource": {
                             "type": "prometheus"
                         },
-                        "expr":  "(server_gpu_1_memory_usage_gigabytes{service=~\"model-{{ model_name }}-predictor-{{ model_name }}-0-model-{{ model_name }}\"} / 1024)",
+                        "expr":  "(server_gpu_1_memory_usage_gigabytes{service=~\"model-19f69817-predictor-19f69817-0-model-19f69817\"} / 1024)",
                         "refId": "A"
                     }
                 ],
@@ -479,7 +479,7 @@ data:
                         "datasource": {
                             "type": "prometheus"
                         },
-                        "expr": "server_successful_predictions_total{service=~\"model-{{ model_name }}-predictor-{{ model_name }}-0-model-{{ model_name }}\"}",
+                        "expr": "server_successful_predictions_total{service=~\"model-19f69817-predictor-19f69817-0-model-19f69817\"}",
                         "legendFormat": "Success",
                         "refId": "A"
                     }
@@ -539,7 +539,7 @@ data:
                         "datasource": {
                             "type": "prometheus"
                         },
-                        "expr": "server_failed_predictions_total{service=~\"model-{{ model_name }}-predictor-{{ model_name }}-0-model-{{ model_name }}\"}",
+                        "expr": "server_failed_predictions_total{service=~\"model-19f69817-predictor-19f69817-0-model-19f69817\"}",
                         "legendFormat": "Failures",
                         "refId": "A"
                     }
@@ -600,7 +600,7 @@ data:
                         "datasource": {
                             "type": "prometheus"
                         },
-                        "expr": "server_load_time_seconds{service=~\"model-{{ model_name }}-predictor-{{ model_name }}-0-model-{{ model_name }}\"}",
+                        "expr": "server_load_time_seconds{service=~\"model-19f69817-predictor-19f69817-0-model-19f69817\"}",
                         "legendFormat": "Server Load Time",
                         "refId": "A"
                     }
@@ -661,7 +661,7 @@ data:
                         "datasource": {
                             "type": "prometheus"
                         },
-                        "expr": "model_load_time_seconds{service=~\"model-{{ model_name }}-predictor-{{ model_name }}-0-model-{{ model_name }}\"}",
+                        "expr": "model_load_time_seconds{service=~\"model-19f69817-predictor-19f69817-0-model-19f69817\"}",
                         "legendFormat": "Model Load Time",
                         "refId": "A"
                     }
@@ -766,7 +766,7 @@ data:
                         "datasource": {
                             "type": "prometheus"
                         },
-                        "expr": "rate(server_requests_total{service=~\"model-{{ model_name }}-predictor-{{ model_name }}-0-model-{{ model_name }}\"}[30s])",
+                        "expr": "rate(server_requests_total{service=~\"model-19f69817-predictor-19f69817-0-model-19f69817\"}[30s])",
                         "legendFormat": "QPS (Last 30s)",
                         "refId": "A"
                     }
@@ -858,7 +858,7 @@ data:
                         "datasource": {
                             "type": "prometheus"
                         },
-                        "expr": "avg(rate(server_inference_duration_seconds_sum{service=~\"model-{{ model_name }}-predictor-{{ model_name }}-0-model-{{ model_name }}\"}[30s])) / avg(rate(server_inference_duration_seconds_count{service=~\"model-{{ model_name }}-predictor-{{ model_name }}-0-model-{{ model_name }}\"}[30s]))",
+                        "expr": "avg(rate(server_inference_duration_seconds_sum{service=~\"model-19f69817-predictor-19f69817-0-model-19f69817\"}[30s])) / avg(rate(server_inference_duration_seconds_count{service=~\"model-19f69817-predictor-19f69817-0-model-19f69817\"}[30s]))",
                         "legendFormat": "Average Inference Time",
                         "refId": "A"
                     }
@@ -876,7 +876,7 @@ data:
         },
         "timepicker": {},
         "timezone": "",
-        "title": "{{ model_name }} Metrics",
-        "uid": "{{ model_name }}",
+        "title": "19f69817 Metrics",
+        "uid": "19f69817",
         "weekStart": ""
     }
