@@ -25,6 +25,7 @@ jobs:
     - name: Run ./app/releases/gh_release.py to Generate Deployment Manifests
       run: |
         # Ensure the release.py script is in the repository or clone the necessary repo
+        cd $GITHUB_WORKSPACE
         ./app/releases/gh_release.py --image-uri ${{ github.event.client_payload.image_uri }}
 
   commit-and-push-models:
@@ -37,11 +38,13 @@ jobs:
 
     - name: Configure Git
       run: |
+        cd $GITHUB_WORKSPACE
         git config --global user.name "K5W_gh_actions"
         git config --global user.email "akinolawilson@gmail.com"
 
     - name: Commit and Push './app/releases/models' Folder
       run: |
+        cd $GITHUB_WORKSPACE
         # Add changes in 'releases/models' folder
         git add ./app/releases/models/*
         git commit -m "Update models with new deployment templates"
