@@ -43,8 +43,9 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE
         # Add changes in 'releases/models' folder
-        git add ./app/releases/models/*
-        git commit -m "Update models with new release manifests"
+        git add -A ./app/releases/models/
+        # Commit the changes
+        git commit -m "Update models with new release manifests" || echo "No changes to commit"
         # Update the remote URL to include the GITHUB_TOKEN
         git remote set-url origin https://x-access-token:$GITHUB_TOKEN@github.com/${{ github.repository }}.git
         # Push changes
