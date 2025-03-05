@@ -42,43 +42,43 @@ BOLD = "\033[1m"
 RESET = "\033[0m"
 
 
-class AbsPath:
-    '''
-        helper for finding model/release folder independent of where script is called form 
-        assuming only one folder containing releases/models exists in the filesystem 
-        TODO: Raise Error if more than one matching directory exists 
-    '''    
-    def __init__(self, start_node = Path("/"), node_link = "releases/models"):
-        self.start_node : Path = start_node
-        self.node_link = node_link
+# class AbsPath:
+#     '''
+#         helper for finding model/release folder independent of where script is called form 
+#         assuming only one folder containing releases/models exists in the filesystem 
+#         TODO: Raise Error if more than one matching directory exists 
+#     '''    
+#     def __init__(self, start_node = Path("/"), node_link = "releases/models"):
+#         self.start_node : Path = start_node
+#         self.node_link = node_link
     
     
-    def search(self):
-        try:
-            for p in self.start_node.rglob(self.node_link):
-                try:
-                    if p.is_dir():
-                        return p.resolve()  # Return first matching directory
-                except PermissionError:
-                    continue  # Skip directories where permission is denied
-        except PermissionError:
-            pass  # Skip if root-level scanning fails
-        return None 
-    def __call__(self):
-        abs_path = self.search()
-        if abs_path:
-            return str(abs_path)
-        else:
-            err_msg = (
-            f"Absolute path {self.node_link} could not be found.\n\n"
-            f"Folder containing subpath `{BOLD}{MAGENTA}releases/models{RESET}` or `{BOLD}{MAGENTA}releases/templates{RESET}` "
-            f"is supposed to contain Seldon model deployment manifests and the templates which generate them. "
-            f"Subpath provided did not match required pattern."
-        )
-            raise FileNotFoundError(errno.ENOENT, err_msg, self.node_link)
+#     def search(self):
+#         try:
+#             for p in self.start_node.rglob(self.node_link):
+#                 try:
+#                     if p.is_dir():
+#                         return p.resolve()  # Return first matching directory
+#                 except PermissionError:
+#                     continue  # Skip directories where permission is denied
+#         except PermissionError:
+#             pass  # Skip if root-level scanning fails
+#         return None 
+#     def __call__(self):
+#         abs_path = self.search()
+#         if abs_path:
+#             return str(abs_path)
+#         else:
+#             err_msg = (
+#             f"Absolute path {self.node_link} could not be found.\n\n"
+#             f"Folder containing subpath `{BOLD}{MAGENTA}releases/models{RESET}` or `{BOLD}{MAGENTA}releases/templates{RESET}` "
+#             f"is supposed to contain Seldon model deployment manifests and the templates which generate them. "
+#             f"Subpath provided did not match required pattern."
+#         )
+#             raise FileNotFoundError(errno.ENOENT, err_msg, self.node_link)
     
-    def __str__(self):
-        return self.__call__()
+#     def __str__(self):
+#         return self.__call__()
             
         
 class Compiler:
@@ -87,11 +87,11 @@ class Compiler:
     '''
     def __init__(self, model_name):
         self.model_name = model_name
-
         self.__call__()
+
     def __call__(self):
-        template_file = Path(str(AbsPath(node_link="releases/templates")))  / 'model_release.yaml.j2'
-        output_dir = Path(str(AbsPath(node_link="releases/models"))) 
+        template_file = Path("/kmlflow/app/releases") / 'model_release.yaml.j2'
+        output_dir = Path("/kmlflow/app/releases") / "models"
         output_dir.mkdir(parents=True, exist_ok=True)
         output_file = output_dir / f"{self.model_name}.yaml"
         if output_file.exists():
