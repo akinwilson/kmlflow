@@ -41,7 +41,7 @@ INFERENCE_LATENCY = Histogram('server_inference_duration_seconds', 'Time taken b
 # System Resource Metrics 
 CPU_USAGE = Gauge('server_cpu_usage', 'Current CPU utilization percentage')
 MEMORY_USAGE = Gauge('server_memory_usage_gigabytes', 'Current memory usage in gigabytes')
-
+TOTAL_MEMORY = Gauge('server_total_memory_gigabytes', 'Total memory available on the system in gigabytes')
 
 #################################################################################################
 server_load_start = time.time()
@@ -172,6 +172,10 @@ if no_gpus > 0:
             "GPU_UTILIZATION": Gauge(
                 f'server_gpu_{idx}_utilization', 
                 f'GPU {idx} utilization percentage'
+            ),
+            "GPU_MEMORY_TOTAL": Gauge(
+                f'server_gpu_{idx}_total_memory_gigabytes', #server_gpu_1_total_memory_gigabytes
+                f'GPU {idx} memory total in gigabytes'
             )
         } 
         for idx in range(1, no_gpus + 1)
@@ -196,13 +200,16 @@ def update_metrics():
     while True: 
         CPU_USAGE.set(psutil.cpu_percent()) # CPU % 
         MEMORY_USAGE.set(float(bytes2human(psutil.virtual_memory().used)[:-1])) # RAM in gigabytes 
+        TOTAL_MEMORY.set(float(bytes2human(psutil.virtual_memory().total)[:-1]))  # Total RAM in
         if gpu_enabled:
             for (idx, handle ) in gpu_handle_dict.items():
                 gpu_util = pynvml.nvmlDeviceGetUtilizationRates(handle).gpu
-                gpu_mem = float(bytes2human(pynvml.nvmlDeviceGetMemoryInfo(handle).used)[:-1])
+                gpu_mem_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+                gpu_mem_used = float(bytes2human(gpu_mem_info.used)[:-1])
+                gpu_mem_total = float(bytes2human(gpu_mem_info.total)[:-1])
                 gpu_usage_dict[idx]['GPU_UTILIZATION'].set(gpu_util)
-                gpu_usage_dict[idx]['GPU_MEMORY_USAGE'].set(gpu_mem)
-
+                gpu_usage_dict[idx]['GPU_MEMORY_USAGE'].set(gpu_mem_used)
+                gpu_usage_dict[idx]['GPU_MEMORY_TOTAL'].set(gpu_mem_total)
         time.sleep(15)
 # Start background thread for metrics update 
 threading.Thread(target=update_metrics, daemon=True).start() 

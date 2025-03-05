@@ -4,6 +4,7 @@ import mlflow
 import json
 import shutil
 from pathlib import Path
+import torch
 from transformers import T5ForConditionalGeneration, T5Tokenizer
 from mlflow.models import ModelSignature
 from mlflow.types import Schema, ColSpec
@@ -73,12 +74,12 @@ class QuestionAnsweringModel(mlflow.pyfunc.PythonModel):
         self.model = T5ForConditionalGeneration.from_pretrained(context.artifacts["model"])
         self.model.to(self.device)
 
-    def predict(self, context, model_input : pd.DataFrame):
-        input_text = model_input.to_records()[0]  # Extract string safely
-        inputs = self.tokenizer(input_text[1], return_tensors="pt")
+    def predict(self, context, model_input: pd.DataFrame):
+        # Extract the input text from the DataFrame
+        input_text = model_input.to_records()[0][1]  # Extract the string safely
+        inputs = self.tokenizer(input_text, return_tensors="pt").to(self.device)
         outputs = self.model.generate(**inputs)
         return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-
 
 
 
