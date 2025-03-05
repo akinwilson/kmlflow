@@ -90,7 +90,7 @@ class Compiler:
         self.__call__()
 
     def __call__(self):
-        template_file = Path(__file__).parent / 'model_release.yaml.j2'
+        template_file = Path(__file__).parent / "templates" / 'model_release.yaml.j2'
         output_dir = Path(__file__).parent / "models"
         output_dir.mkdir(parents=True, exist_ok=True)
         output_file = output_dir / f"{self.model_name}.yaml"
