@@ -33,7 +33,7 @@ jobs:
 
 
     - name: Upload Generated Deployment Manifests
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: deployment-manifests
         path: ./app/releases/models  # The folder containing the generated files
@@ -53,7 +53,7 @@ jobs:
         git config --global user.email "akinolawilson@gmail.com"
 
     - name: Download Generated Deployment Manifests
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: deployment-manifests
 
