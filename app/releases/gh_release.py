@@ -96,8 +96,8 @@ class Compiler:
         output_file = output_dir / f"{self.model_name}.yaml"
         if output_file.exists():
             print(f"Release: {self.model_name} already exists. Deleting existing release {self.model_name}.yaml")
-                output_file.unlink()
-                return
+            output_file.unlink()
+            return
 
         else: 
             with open(template_file, 'r') as file:
