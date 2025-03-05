@@ -229,7 +229,7 @@ echo ""
 echo "Installing ArgoCD ..."
 
 kubectl apply -f "$SCRIPT_DIR/argocd/ns.yaml"
-kubectl apply -f "$SCRIPT_DIR/argocd/secrets.yaml"
+# kubectl apply -f "$SCRIPT_DIR/argocd/secrets.yaml"
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 kubectl patch cm argocd-cmd-params-cm -n argocd --type merge -p '{"data": {"server.rootpath": "/argo/"}}'
 kubectl get cm argocd-cm -n argocd -o yaml | yq eval '.data += {"dex.config": "web:\n  headers:\n    X-Frame-Options: \"ALLOWALL\"", "users.anonymous.enabled": "true", "server.x-frame-options": "ALLOWALL"}' - > "$SCRIPT_DIR/argocd/cm.yaml"
@@ -241,7 +241,6 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 
 kubectl create secret tls argocd-tls --key="$SCRIPT_DIR/argocd/tls.key" --cert="$SCRIPT_DIR/argocd/tls.crt" -n argocd
 kubectl apply -f "$SCRIPT_DIR/argocd/ingress.yaml"
-
 kubectl apply -f "$SCRIPT_DIR/argocd/app.yaml"
 echo ""
 echo ""

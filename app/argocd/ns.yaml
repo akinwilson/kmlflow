@@ -3,3 +3,61 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: argocd
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd-ingress
+  namespace: argocd
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /argo/$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"  # Redirect HTTP to HTTPS
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"  # Force HTTPS
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"  # Argo CD serves HTTPS
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+      - 192.168.49.2
+      secretName: argocd-tls
+  rules:
+    - http:
+        paths:
+          - path: /argo(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: argocd-server
+                port:
+                  number: 443
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: argocd-secret
+  namespace: argocd  # Replace with the namespace where Argo CD is installed
+type: Opaque
+stringData:
+  server.secretkey: "Yd/k4euHxNJkJ+/7r5x38+Fn8RrRS001XHUFJGDUra0="  # Replace with a secure random string
+  webhook.github.secret: "your-github-webhook-secret"  # Optional
+  # oidc.keycloak.clientSecret: "your-keycloak-client-secret"  # Optional
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: seldon-models
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: "https://github.com/akinwilson/kmlflow.git"
+    targetRevision: main
+    path: app/releases/models  # Folder containing SeldonDeployment YAMLs
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: models
+  syncPolicy:
+    automated:
+      prune: true  # Remove old resources
+      selfHeal: true  # Fix drift automatically
