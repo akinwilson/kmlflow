@@ -38,9 +38,13 @@ jobs:
         git config --global user.email "akinolawilson@gmail.com"
 
     - name: Commit and Push './app/releases/models' Folder
+      env:
+        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}  # Use the default GITHUB_TOKEN
       run: |
         cd $GITHUB_WORKSPACE
         # Add changes in 'releases/models' folder
         git add ./app/releases/models/*
         git commit -m "Update models with new release manifests"
+        # Push using the GITHUB_TOKEN for authentication
+        git remote set-url origin https://x-access-token:$GITHUB_TOKEN@github.com/${{ github.repository }}.git
         git push origin main
