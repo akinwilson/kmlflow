@@ -11,6 +11,9 @@ jobs:
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v2
+      with:
+        persist-credentials: false  # Prevents overwriting of credentials between steps
+        fetch-depth: 0  # Ensures the full history is fetched
 
     - name: Set up Python environment
       uses: actions/setup-python@v2
@@ -28,6 +31,13 @@ jobs:
         cd $GITHUB_WORKSPACE
         ./app/releases/gh_release.py --image-uri ${{ github.event.client_payload.image_uri }}
 
+
+    - name: Upload Generated Deployment Manifests
+      uses: actions/upload-artifact@v2
+      with:
+        name: deployment-manifests
+        path: ./app/releases/models  # The folder containing the generated files
+
   commit-and-push-models:
     runs-on: ubuntu-latest
     needs: generate-deployment-manifests  # Ensure this job runs after the first job
@@ -42,10 +52,15 @@ jobs:
         git config --global user.name "K5W_gh_actions"
         git config --global user.email "akinolawilson@gmail.com"
 
+    - name: Download Generated Deployment Manifests
+      uses: actions/download-artifact@v2
+      with:
+        name: deployment-manifests
+
     - name: Commit and Push './app/releases/models' Folder
       run: |
         cd $GITHUB_WORKSPACE
         # Add changes in 'releases/models' folder
         git add ./app/releases/models/*
-        git commit -m "Update models with new deployment templates"
+        git commit -m "Update models with new release manifests"
         git push origin main
