@@ -23,10 +23,9 @@ def landing_page(request):
     |_|\_\_| |_| |_|_|_| |_|\___/ \_/\_/  
 
     """ 
-    get_endpoints()
     return render(request, "ui/landing.html", {"ascii_art": ascii_art, **get_endpoints()})
 
 
-def proposal_page(request):
-    return render(request, "proposal/landing.html")
+# def proposal_page(request):
+#     return render(request, "proposal/landing.html")
 
