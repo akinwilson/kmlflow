@@ -1,0 +1,244 @@
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ page_title }}</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Latin+Modern+Roman:wght@400;700&display=swap">
+
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Latin+Modern&display=swap" rel="stylesheet">
+<style>
+.proposal-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* Responsive grid */
+    gap: 1.5rem;
+    padding: 2rem;
+}
+
+/* Individual Proposal Card */
+.proposal-card {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* Make space for icons at the bottom */
+}
+
+.proposal-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Title */
+.proposal-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 0.8rem;
+}
+
+/* Description */
+.proposal-description {
+    font-size: 1rem;
+    color: #555;
+    margin-bottom: 1.2rem;
+}
+
+/* Proposal Goal */
+.proposal-goal {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+}
+
+.proposal-meta {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 1.5rem;
+}
+
+/* Links */
+.github-link {
+    display: inline-block;
+    font-size: 0.9rem;
+    color: #007bff;
+    text-decoration: none;
+    margin-top: 1rem;
+    font-weight: bold;
+}
+
+.github-link:hover {
+    text-decoration: underline;
+}
+
+.proposal-meta a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.proposal-meta a:hover {
+    text-decoration: underline;
+}
+
+/* Created At */
+.proposal-created-at {
+    font-size: 0.9rem;
+    color: #888;
+    margin-top: 1rem;
+}
+
+/* Icons and hover effect */
+.proposal-icons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto; /* Align to the bottom of the card */
+}
+
+.icon-container {
+    position: relative;
+    display: inline-block;
+    margin: 0 10px;
+    cursor: pointer;
+}
+.icon-container::after {
+    content: attr(data-tooltip); /* Use the data-tooltip attribute */
+    position: absolute;
+    bottom: 100%; /* Position the tooltip above the icon */
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 5px 10px;
+    background-color: #333;
+    color: #fff;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0; /* Hide the tooltip by default */
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    pointer-events: none; /* Ensure the tooltip doesn't interfere with hovering */
+}
+
+.icon-container:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Icon Style */
+.proposal-icons i {
+    font-size: 1.2rem; /* Smaller icons */
+    color: #007bff;
+    margin-right: 0.5rem; /* Space between icon and text */
+    transition: color 0.3s ease;
+}
+
+.proposal-icons .icon-container:hover i {
+    color: #0056b3;
+}
+
+/* Tooltip on hover */
+.proposal-icons .icon-text {
+    font-size: 0.9rem;
+    color: #555;
+    display: inline-block;
+}
+
+/* Empty state (No proposals available) */
+.no-proposals {
+    text-align: center;
+    color: #888;
+    font-size: 1.2rem;
+    padding: 2rem;
+}
+
+.navbar-brand {
+        font-family: 'Latin Modern', serif;
+        font-size: 24px;
+        text-decoration: none;
+        color: #000;
+    }
+
+
+
+/* Custom CSS */
+.tags-container {
+    margin-bottom: 20px;
+}
+
+.category-tag {
+    cursor: pointer;
+    font-size: 1.2rem;
+}
+
+
+/* Style for the associated tags */
+.associated-tags-list .badge {
+    font-size: 0.9em; /* Slightly smaller than the parent tag */
+    margin: 0.25rem;
+}
+
+/* Ensure the container is scrollable */
+.associated-tags-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.highlighted {
+    background-color: #0056b3; /* Darker shade for highlighted tag */
+}
+
+/* Highlight selected category tag */
+.category-tag.selected {
+    background-color: #0056b3; /* Darker shade for selected category */
+}
+
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const categoryTags = document.querySelectorAll('.category-tag');
+    const associatedTagsContainer = document.querySelector('.associated-tags-container');
+    const associatedTagsList = document.querySelector('.associated-tags-list');
+
+    categoryTags.forEach(tag => {
+        tag.addEventListener('click', function(event) {
+            event.preventDefault();
+
+            const categoryId = this.getAttribute('data-category-id');
+            const isHighlighted = this.classList.contains('highlighted');
+
+            // Remove highlight from all tags
+            categoryTags.forEach(t => t.classList.remove('highlighted'));
+
+            // Hide the associated tags container if the same tag is clicked again
+            if (isHighlighted) {
+                this.classList.remove('highlighted');
+                associatedTagsContainer.style.display = 'none';
+                return;
+            }
+
+            // Highlight the clicked tag
+            this.classList.add('highlighted');
+
+            // Fetch the associated tags for the clicked category
+            const associatedTags = {{ sub_tags|safe }}[categoryId];
+
+            // Clear the existing associated tags
+            associatedTagsList.innerHTML = '';
+
+            // Populate the associated tags container
+            associatedTags.forEach(subTag => {
+                const subTagElement = document.createElement('a');
+                subTagElement.href = '#';
+                subTagElement.className = 'badge badge-pill badge-secondary m-2 py-2 px-3';
+                subTagElement.textContent = subTag.name;
+                associatedTagsList.appendChild(subTagElement);
+            });
+
+            // Show the associated tags container
+            associatedTagsContainer.style.display = 'block';
+        });
+    });
+});
+</script>

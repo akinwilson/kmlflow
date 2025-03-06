@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% include "partials/head.html" %}
+</head>
+<body>
+    {% include "partials/navbar.html" %}
+
+    <!-- <div class="tags-container text-center py-2">
+        <div class="tags-list">
+            {% for tag in tags %}
+                <a href="?tag={{ tag.name }}" class="badge badge-pill badge-primary m-2 py-3 px-4">{{ tag.name }}</a>
+            {% endfor %}
+        </div>
+    </div> -->
+
+    <div class="tags-container text-center py-3">
+        <div class="tags-list">
+            {% for tag in tags %}
+                <a href="#" class="badge badge-pill badge-primary m-2 py-3 px-4 category-tag" data-category-id="{{ tag.id }}">
+                    {{ tag.name }}
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Container for associated tags -->
+    <div class="associated-tags-container mt-4" style="display: none;">
+        <div class="associated-tags-list row mx-auto" style="max-height: 180px; overflow-y: auto;">
+            <!-- Associated tags will be dynamically inserted here -->
+        </div>
+    </div>
+
+
+    <div class="proposal-container">
+        {% for proposal in proposals %}
+            <div class="proposal-card">
+                <div class="proposal-title">{{ proposal.title }}</div>
+                <div class="proposal-description">{{ proposal.description }}</div>
+                <div class="proposal-goal">
+                    <strong>Proposal Goal:</strong> {{ proposal.proposal_goal }}
+                </div>
+                <div class="proposal-meta">
+                    <strong>Research Paper Title:</strong> <a href="{{ proposal.research_paper_link }}" target="_blank">{{ proposal.research_paper_title }}</a>
+                    <br>
+                    <br>
+                    <strong>Trial Runs:</strong> <a href="{{ proposal.trial_runs }}" target="_blank">View Trial Runs</a>
+                </div>
+                <a href="{{ proposal.repo_link }}" class="github-link" target="_blank">GitHub Repository</a>
+    
+                <!-- Icons at the bottom of the card -->
+                <div class="proposal-icons">
+                    <div class="icon-container" data-tooltip="Hours">
+                        <i class="fas fa-clock"></i>
+                        <div class="icon-text">{{ proposal.expected_compute_time }}</div>
+                    </div>
+                    <div class="icon-container" data-tooltip="GPU(s)">
+                        <i class="fas fa-microchip"></i>
+                        <div class="icon-text">{{ proposal.requested_gpus }}</div>
+                    </div>
+                    <div class="icon-container" data-tooltip="Upvotes">
+                        <i class="fas fa-thumbs-up"></i>
+                        <div class="icon-text">{{ proposal.upvotes }}</div>
+                    </div>
+                    <div class="icon-container" data-tooltip="W8S">
+                        <!-- Yazz symbol -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 100 100">
+                            <text x="50%" y="50%" font-size="55" text-anchor="middle" font-weight="bold" dy="0.4em" dx="0.1em" font-family="Arial, sans-serif" fill="#007bff">ⵣ</text>
+                        </svg>
+                        <div class="icon-text">{{ proposal.predicted_cost }}
+                            <span class="unit-text"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="proposal-created-at">
+                    <strong>Created At:</strong> {{ proposal.created_at|date:"F j, Y, g:i a" }}
+                </div>
+            </div>
+        {% empty %}
+            <div class="no-proposals">
+                <p>No proposals available.</p>
+            </div>
+        {% endfor %}
+    </div>
+        
+</body>
+</html>

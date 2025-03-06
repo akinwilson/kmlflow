@@ -1,0 +1,111 @@
+[
+    {
+      "model": "proposals.Proposals",
+      "pk": 1,
+      "fields": {
+        "research_paper_link": "https://arxiv.org/abs/2501.12948",
+        "research_paper_title": "DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning",
+        "title": "Deep Reinforcement Learning for Robotics",
+        "description": "Exploring deep RL algorithms for robotic control in dynamic environments.",
+        "proposal_goal": "Improve upon the current state-of-the-art techniques of robotics, challenging private entities like Boston Dynamics.",
+        "expected_compute_time": 12,
+        "requested_gpus": 4,
+        "trial_runs": 10,
+        "upvotes": 120,
+        "predicted_cost": 500,
+        "repo_link": "https://github.com/example1",
+        "created_at": "2024-01-01T10:00:00"
+      }
+    },
+    {
+      "model": "proposals.Proposals",
+      "pk": 2,
+      "fields": {
+        "research_paper_link": "https://arxiv.org/abs/2502.15321",
+        "research_paper_title": "Optimizing Large-Scale Transformer Training with Efficient Parallelization",
+        "title": "Scaling Laws for Transformers",
+        "description": "Investigating the impact of model scaling on performance and efficiency.",
+        "proposal_goal": "Develop cost-effective scaling strategies for training billion-parameter transformers.",
+        "expected_compute_time": 24,
+        "requested_gpus": 8,
+        "trial_runs": 5,
+        "upvotes": 87,
+        "predicted_cost": 1200,
+        "repo_link": "https://github.com/example2",
+        "created_at": "2024-10-10T10:00:00"
+      }
+    },
+    {
+      "model": "proposals.Proposals",
+      "pk": 3,
+      "fields": {
+        "research_paper_link": "https://arxiv.org/abs/2503.19875",
+        "research_paper_title": "Self-Supervised Learning for Audio Representation",
+        "title": "Improving ASR Systems with Self-Supervised Learning",
+        "description": "Exploring self-supervised methods to enhance automatic speech recognition.",
+        "proposal_goal": "Reduce data dependency for training robust ASR models in low-resource settings.",
+        "expected_compute_time": 15,
+        "requested_gpus": 6,
+        "trial_runs": 8,
+        "upvotes": 95,
+        "predicted_cost": 800,
+        "repo_link": "https://github.com/example3",
+        "created_at": "2024-03-11T10:00:00"
+      }
+    },
+    {
+      "model": "proposals.Proposals",
+      "pk": 4,
+      "fields": {
+        "research_paper_link": "https://arxiv.org/abs/2504.10987",
+        "research_paper_title": "Neural Radiance Fields for Dynamic Scenes",
+        "title": "Optimizing NeRFs for Real-Time Applications",
+        "description": "Applying novel techniques to accelerate Neural Radiance Fields.",
+        "proposal_goal": "Enable real-time rendering of dynamic 3D scenes using NeRFs.",
+        "expected_compute_time": 20,
+        "requested_gpus": 10,
+        "trial_runs": 7,
+        "upvotes": 75,
+        "predicted_cost": 1500,
+        "repo_link": "https://github.com/example4",
+        "created_at": "2024-12-12T10:00:00"
+      }
+    },
+    {
+      "model": "proposals.Proposals",
+      "pk": 5,
+      "fields": {
+        "research_paper_link": "https://arxiv.org/abs/2505.14532",
+        "research_paper_title": "Quantum Machine Learning for Drug Discovery",
+        "title": "Applying QML for Molecular Simulations",
+        "description": "Using quantum computing to im prove molecular property predictions.",
+        "proposal_goal": "Leverage QML techniques to accelerate drug discovery pipelines.",
+        "expected_compute_time": 30,
+        "requested_gpus": 12,
+        "trial_runs": 3,
+        "upvotes": 110,
+        "predicted_cost": 2000,
+        "repo_link": "https://github.com/example5",
+        "created_at": "2024-06-03T10:00:00"
+      }
+    },
+    {
+      "model": "proposals.Proposals",
+      "pk": 6,
+      "fields": {
+        "research_paper_link": "https://arxiv.org/abs/2506.17865",
+        "research_paper_title": "Adversarial Robustness in Computer Vision",
+        "title": "Improving CNN Robustness Against Adversarial Attacks",
+        "description": "Developing defenses against adversarial perturbations in image classifiers.",
+        "proposal_goal": "Create a benchmark for evaluating adversarial robustness in deep learning models.",
+        "expected_compute_time": 18,
+        "requested_gpus": 5,
+        "trial_runs": 6,
+        "upvotes": 82,
+        "predicted_cost": 600,
+        "repo_link": "https://github.com/example6",
+        "created_at": "2024-03-01T10:00:00"
+      }
+    }
+  ]
+  

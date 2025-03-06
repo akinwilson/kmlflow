@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+{% include "partials/head.html" %}
+
+</head>
+<body>
+
+    {% include "partials/navbar.html" %}
+    <div class="tags-container text-center py-3">
+        <div class="tags-list">
+            {% for tag in tags %}
+                <a href="#" class="badge badge-pill badge-primary m-2 py-3 px-4 category-tag" data-category-name="{{ tag.name }}">
+                    {{ tag.name }}
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Container for associated sub-tags -->
+    <div class="associated-tags-container mt-4" style="display: none;">
+        <div class="associated-tags-list row mx-auto" style="max-height: 200px; overflow-y: auto;">
+            <!-- Associated sub-tags will be dynamically inserted here -->
+        </div>
+    </div>
+    
+
+        <div class="container mt-5">
+            <h1 class="mb-4">Propose</h1>
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                <!-- Render form fields with Bootstrap styling -->
+                <div class="mb-3">
+                    {{ form.research_paper_link.label_tag }}
+                    {{ form.research_paper_link }}
+                    <div class="invalid-feedback">
+                        {{ form.research_paper_link.errors }}
+                    </div>
+                </div>
+    
+                <div class="mb-3">
+                    {{ form.research_paper_title.label_tag }}
+                    {{ form.research_paper_title }}
+                    <div class="invalid-feedback">
+                        {{ form.research_paper_title.errors }}
+                    </div>
+                </div>
+    
+                <div class="mb-3">
+                    {{ form.title.label_tag }}
+                    {{ form.title }}
+                    <div class="invalid-feedback">
+                        {{ form.title.errors }}
+                    </div>
+                </div>
+    
+                <div class="mb-3">
+                    {{ form.description.label_tag }}
+                    {{ form.description }}
+                    <div class="invalid-feedback">
+                        {{ form.description.errors }}
+                    </div>
+                </div>
+    
+                <div class="mb-3">
+                    {{ form.proposal_goal.label_tag }}
+                    {{ form.proposal_goal }}
+                    <div class="invalid-feedback">
+                        {{ form.proposal_goal.errors }}
+                    </div>
+                </div>
+    
+                <div class="mb-3">
+                    {{ form.trial_runs.label_tag }}
+                    {{ form.trial_runs }}
+                    <div class="invalid-feedback">
+                        {{ form.trial_runs.errors }}
+                    </div>
+                </div>
+    
+                <div class="mb-3">
+                    {{ form.requested_gpus.label_tag }}
+                    {{ form.requested_gpus }}
+                    <div class="invalid-feedback">
+                        {{ form.requested_gpus.errors }}
+                    </div>
+                </div>
+    
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+        </div>
+    
+        <!-- Bootstrap JS (optional, for form validation) -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+            // Enable Bootstrap form validation
+            (function () {
+                'use strict'
+                var forms = document.querySelectorAll('.needs-validation')
+                Array.prototype.slice.call(forms)
+                    .forEach(function (form) {
+                        form.addEventListener('submit', function (event) {
+                            if (!form.checkValidity()) {
+                                event.preventDefault()
+                                event.stopPropagation()
+                            }
+                            form.classList.add('was-validated')
+                        }, false)
+                    })
+            })()
+        </script>
+    </body>
+</html>
+
+<!--     
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Draft a Proposal</h1>
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                {{ form.as_p }}
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Submit</button>
+        </form>
+    </div>
+
+    <!-- Bootstrap JS and Popper.js (optional for some components like modals) -->
+    <!-- <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html> --> -->
