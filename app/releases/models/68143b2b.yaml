@@ -1,0 +1,882 @@
+---
+## Pod Monitor
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: model-68143b2b-monitor
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      seldon-deployment-id: model-68143b2b
+  podMetricsEndpoints:
+    - port: "http"  # Match the container port name
+      path: /prometheus
+  namespaceSelector:
+    any: true
+---
+## Seldon Deployment
+apiVersion: machinelearning.seldon.io/v1
+kind: SeldonDeployment
+metadata:
+  name: model-68143b2b
+  namespace: models
+  annotations:
+    seldon.io/no-storage-initializer: "true"
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/prometheus"
+    prometheus.io/port: "9000"  # Updated to match new container port
+spec:
+  protocol: v2
+  predictors:
+    - name: predictor-68143b2b
+      replicas: 1
+      graph:
+        name: model-68143b2b
+        type: MODEL
+        children: []
+        implementation: 68143B2B_SERVER
+      svcOrchSpec:
+        env:
+          - name: LOG_LEVEL
+            value: DEBUG
+          - name: ROOT_PATH
+            value: "/68143b2b"
+      componentSpecs:
+        - spec:
+            containers:
+              - name: model-68143b2b
+                env:
+                  - name: ROOT_PATH
+                    value: "/68143b2b"
+                  - name: UVICORN_FORWARDED_ALLOW_IPS
+                    value: "*"
+                livenessProbe:
+                  httpGet:
+                    path: /v2/health/live
+                    port: http  # Named port reference
+                  initialDelaySeconds: 20
+                  periodSeconds: 10
+                readinessProbe:
+                  httpGet:
+                    path: /v2/health/ready
+                    port: http  # Named port reference
+                  initialDelaySeconds: 20
+                  periodSeconds: 10
+                ports:
+                  - name: http  # Updated from "metrics" to "http"
+                    containerPort: 9000
+                    protocol: TCP
+                resources:
+                  requests:
+                    memory: "512Mi"
+                    cpu: "500m"
+                    nvidia.com/gpu: "1"
+                  limits:
+                    memory: "20Gi"
+                    cpu: "2"
+                    nvidia.com/gpu: "1"
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: model-68143b2b-docs-ingress
+  namespace: models
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"  # Enable regex matching
+    nginx.ingress.kubernetes.io/rewrite-target: /docs$1$2
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          # API Documentation Endpoint
+          - path: /68143b2b/docs(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: model-68143b2b-predictor-68143b2b-model-68143b2b # seldon-models-model-68143b2b ### model-68143b2b-predictor-68143b2b-model-68143b2b
+                port:
+                  number: 9000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: model-68143b2b-api-ingress
+  namespace: models
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"  # Enable regex matching
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          # Prediction Endpoint
+          - path: /68143b2b(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: model-68143b2b-predictor-68143b2b-model-68143b2b  # seldon-models-model-68143b2b ### model-68143b2b-predictor-68143b2b-model-68143b2b
+                port:
+                  number: 9000
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: seldon-dashboard-68143b2b
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  68143b2b-dashboard.json: |
+    {
+      "annotations": {
+            "list": [
+              {
+                "builtIn": 1,
+                "datasource": {
+                  "type": "datasource",
+                  "uid": "grafana"
+                },
+                "enable": false,
+                "hide": false,
+                "type": "dashboard"
+              }
+            ]
+          },
+          "description": "This dashboard tracks key metrics for model 68143b2b, including inference requests, system resource usage, and performance.",
+          "editable": true,
+          "fiscalYearStartMonth": 0,
+          "graphTooltip": 0,
+          "id": 11,
+          "links": [],
+          "templating": {
+            "list": [
+              {
+                "name": "model_name",
+                "label": "Model Name",
+                "type": "constant",
+                "query": "68143b2b",
+                "current": {
+                  "selected": true,
+                  "text": "68143b2b",
+                  "value": "68143b2b"
+                }
+              }
+            ]
+          },
+          "panels": [
+            {
+              "collapsed": false,
+              "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 0
+              },
+              "id": 1,
+              "panels": [],
+              "title": "System Metrics",
+              "type": "row"
+            },
+            {
+              "datasource": {
+                "type": "prometheus"
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "mappings": [],
+                  "max": 100,
+                  "min": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green"
+                      },
+                      {
+                        "color": "red",
+                        "value": 80
+                      }
+                    ]
+                  },
+                  "unit": "percent"
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 0,
+                "y": 1
+              },
+              "id": 2,
+              "options": {
+                "minVizHeight": 75,
+                "minVizWidth": 75,
+                "orientation": "auto",
+                "reduceOptions": {
+                  "calcs": [
+                    "lastNotNull"
+                  ],
+                  "fields": "",
+                  "values": false
+                },
+                "showThresholdLabels": false,
+                "showThresholdMarkers": true,
+                "sizing": "auto"
+              },
+              "pluginVersion": "11.5.2",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus"
+                  },
+                  "expr": "server_cpu_usage{service=~\"model-68143b2b-predictor-68143b2b-0-model-68143b2b\"}",
+                  "legendFormat": "CPU %",
+                  "refId": "A"
+                }
+              ],
+              "title": "CPU Usage (%)",
+              "type": "gauge"
+            },
+            {
+                "datasource": "Prometheus",
+                "fieldConfig": {
+                    "defaults": {
+                        "custom": {
+                            "thresholds": {
+                                "mode": "percentage",
+                                "steps": [
+                                    {
+                                        "color": "green",
+                                        "value": 0
+                                    },
+                                    {
+                                        "color": "yellow",
+                                        "value": 50
+                                    },
+                                    {
+                                        "color": "red",
+                                        "value": 80
+                                    }
+                                ]
+                            }
+                        },
+                        "max": 100,
+                        "min": 0,
+                        "unit": "GB"
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 4,
+                    "w": 6,
+                    "x": 6,
+                    "y": 2
+                },
+                "id": 14,
+                "options": {},
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus"
+                        },
+                        "expr": "(server_total_memory_gigabytes{service=~\"model-68143b2b-predictor-68143b2b-0-model-68143b2b\"} * server_memory_usage_gigabytes{service=~\"model-68143b2b-predictor-68143b2b-0-model-68143b2b\"}) / 100",
+                        "legendFormat": "Used GB",
+                        "refId": "A"
+                    }
+                ],
+                "title": "RAM Memory Usage (GB)",
+                "type": "gauge"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus"
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "mappings": [],
+                        "max": 100,
+                        "min": 0,
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "color": "green"
+                                },
+                                {
+                                    "color": "red",
+                                    "value": 80
+                                }
+                            ]
+                        },
+                        "unit": "percent"
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 4,
+                    "w": 6,
+                    "x": 12,
+                    "y": 3
+                },
+                "id": 4,
+                "options": {
+                    "minVizHeight": 75,
+                    "minVizWidth": 75,
+                    "orientation": "auto",
+                    "reduceOptions": {
+                        "calcs": [
+                            "lastNotNull"
+                        ],
+                        "fields": "",
+                        "values": false
+                    },
+                    "showThresholdLabels": false,
+                    "showThresholdMarkers": true,
+                    "sizing": "auto"
+                },
+                "pluginVersion": "11.5.2",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus"
+                        },
+                        "expr": "server_gpu_1_utilization{service=~\"model-68143b2b-predictor-68143b2b-0-model-68143b2b\"}",
+                        "legendFormat": "GPU %",
+                        "refId": "A"
+                    }
+                ],
+                "title": "GPU Utilization (%)",
+                "type": "gauge"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus"
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "mappings": [],
+                        "max": 100,
+                        "min": 0,
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "color": "green"
+                                },
+                                {
+                                    "color": "red",
+                                    "value": 80
+                                }
+                            ]
+                        },
+                        "unit": "GB"
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 4,
+                    "w": 6,
+                    "x": 18,
+                    "y": 4
+                },
+                "id": 5,
+                "options": {
+                    "minVizHeight": 75,
+                    "minVizWidth": 75,
+                    "orientation": "auto",
+                    "reduceOptions": {
+                        "calcs": [
+                            "lastNotNull"
+                        ],
+                        "fields": "",
+                        "values": false
+                    },
+                    "showThresholdLabels": false,
+                    "showThresholdMarkers": true,
+                    "sizing": "auto"
+                },
+                "pluginVersion": "11.5.2",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus"
+                        },
+                        "expr":  "(server_gpu_1_memory_usage_gigabytes{service=~\"model-68143b2b-predictor-68143b2b-0-model-68143b2b\"} / 1024)",
+                        "refId": "A"
+                    }
+                ],
+                "title": "VRAM Memory Usage (GB)",
+                "type": "gauge"
+            },
+            {
+                "collapsed": false,
+                "gridPos": {
+                    "h": 1,
+                    "w": 24,
+                    "x": 0,
+                    "y": 5
+                },
+                "id": 6,
+                "panels": [],
+                "title": "Inference Metrics",
+                "type": "row"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus"
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "mappings": [],
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "color": "green"
+                                },
+                                {
+                                    "color": "red",
+                                    "value": 80
+                                }
+                            ]
+                        }
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 4,
+                    "w": 6,
+                    "x": 0,
+                    "y": 6
+                },
+                "id": 13,
+                "options": {
+                    "colorMode": "value",
+                    "graphMode": "area",
+                    "justifyMode": "auto",
+                    "orientation": "auto",
+                    "percentChangeColorMode": "standard",
+                    "reduceOptions": {
+                        "calcs": [
+                            "lastNotNull"
+                        ],
+                        "fields": "",
+                        "values": false
+                    },
+                    "showPercentChange": false,
+                    "textMode": "auto",
+                    "wideLayout": true
+                },
+                "pluginVersion": "11.5.2",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus"
+                        },
+                        "expr": "server_successful_predictions_total{service=~\"model-68143b2b-predictor-68143b2b-0-model-68143b2b\"}",
+                        "legendFormat": "Success",
+                        "refId": "A"
+                    }
+                ],
+                "title": "Successful Predictions",
+                "type": "stat"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus"
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "mappings": [],
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "color": "green"
+                                },
+                                {
+                                    "color": "red",
+                                    "value": 80
+                                }
+                            ]
+                        }
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 4,
+                    "w": 6,
+                    "x": 6,
+                    "y": 6
+                },
+                "id": 9,
+                "options": {
+                    "colorMode": "value",
+                    "graphMode": "area",
+                    "justifyMode": "auto",
+                    "orientation": "auto",
+                    "percentChangeColorMode": "standard",
+                    "reduceOptions": {
+                        "calcs": [
+                            "lastNotNull"
+                        ],
+                        "fields": "",
+                        "values": false
+                    },
+                    "showPercentChange": false,
+                    "textMode": "auto",
+                    "wideLayout": true
+                },
+                "pluginVersion": "11.5.2",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus"
+                        },
+                        "expr": "server_failed_predictions_total{service=~\"model-68143b2b-predictor-68143b2b-0-model-68143b2b\"}",
+                        "legendFormat": "Failures",
+                        "refId": "A"
+                    }
+                ],
+                "title": "Failed Predictions",
+                "type": "stat"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus"
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "mappings": [],
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "color": "green"
+                                },
+                                {
+                                    "color": "red",
+                                    "value": 80
+                                }
+                            ]
+                        },
+                        "unit": "s"
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 4,
+                    "w": 6,
+                    "x": 12,
+                    "y": 6
+                },
+                "id": 16,
+                "options": {
+                    "colorMode": "value",
+                    "graphMode": "none",
+                    "justifyMode": "auto",
+                    "orientation": "auto",
+                    "percentChangeColorMode": "standard",
+                    "reduceOptions": {
+                        "calcs": [
+                            "lastNotNull"
+                        ],
+                        "fields": "",
+                        "values": false
+                    },
+                    "showPercentChange": false,
+                    "textMode": "auto",
+                    "wideLayout": true
+                },
+                "pluginVersion": "11.5.2",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus"
+                        },
+                        "expr": "server_load_time_seconds{service=~\"model-68143b2b-predictor-68143b2b-0-model-68143b2b\"}",
+                        "legendFormat": "Server Load Time",
+                        "refId": "A"
+                    }
+                ],
+                "title": "Server Load Time (s)",
+                "type": "stat"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus"
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "mappings": [],
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "color": "green"
+                                },
+                                {
+                                    "color": "red",
+                                    "value": 80
+                                }
+                            ]
+                        },
+                        "unit": "s"
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 4,
+                    "w": 6,
+                    "x": 18,
+                    "y": 6
+                },
+                "id": 15,
+                "options": {
+                    "colorMode": "value",
+                    "graphMode": "none",
+                    "justifyMode": "auto",
+                    "orientation": "auto",
+                    "percentChangeColorMode": "standard",
+                    "reduceOptions": {
+                        "calcs": [
+                            "lastNotNull"
+                        ],
+                        "fields": "",
+                        "values": false
+                    },
+                    "showPercentChange": false,
+                    "textMode": "auto",
+                    "wideLayout": true
+                },
+                "pluginVersion": "11.5.2",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus"
+                        },
+                        "expr": "model_load_time_seconds{service=~\"model-68143b2b-predictor-68143b2b-0-model-68143b2b\"}",
+                        "legendFormat": "Model Load Time",
+                        "refId": "A"
+                    }
+                ],
+                "title": "Model Load Time (s)",
+                "type": "stat"
+            },
+            {
+                "collapsed": false,
+                "gridPos": {
+                    "h": 1,
+                    "w": 24,
+                    "x": 0,
+                    "y": 7
+                },
+                "id": 10,
+                "panels": [],
+                "title": "Performance Metrics",
+                "type": "row"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus"
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "palette-classic"
+                        },
+                        "custom": {
+                            "axisBorderShow": false,
+                            "axisCenteredZero": false,
+                            "axisColorMode": "text",
+                            "axisLabel": "",
+                            "axisPlacement": "auto",
+                            "barAlignment": 0,
+                            "barWidthFactor": 0.6,
+                            "drawStyle": "line",
+                            "fillOpacity": 0,
+                            "gradientMode": "none",
+                            "hideFrom": {
+                                "legend": false,
+                                "tooltip": false,
+                                "viz": false
+                            },
+                            "insertNulls": false,
+                            "lineInterpolation": "linear",
+                            "lineWidth": 1,
+                            "pointSize": 5,
+                            "scaleDistribution": {
+                                "type": "linear"
+                            },
+                            "showPoints": "auto",
+                            "spanNulls": false,
+                            "stacking": {
+                                "group": "A",
+                                "mode": "none"
+                            },
+                            "thresholdsStyle": {
+                                "mode": "off"
+                            }
+                        },
+                        "mappings": [],
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "color": "green"
+                                },
+                                {
+                                    "color": "red",
+                                    "value": 80
+                                }
+                            ]
+                        }
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 6,
+                    "w": 12,
+                    "x": 12,
+                    "y": 11
+                },
+                "id": 12,
+                "options": {
+                    "legend": {
+                        "calcs": [],
+                        "displayMode": "list",
+                        "placement": "bottom",
+                        "showLegend": true
+                    },
+                    "tooltip": {
+                        "hideZeros": false,
+                        "mode": "single",
+                        "sort": "none"
+                    }
+                },
+                "pluginVersion": "11.5.2",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus"
+                        },
+                        "expr": "rate(server_requests_total{service=~\"model-68143b2b-predictor-68143b2b-0-model-68143b2b\"}[30s])",
+                        "legendFormat": "QPS (Last 30s)",
+                        "refId": "A"
+                    }
+                ],
+                "title": "Average Queries Per Second (QPS)",
+                "type": "timeseries"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus"
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "palette-classic"
+                        },
+                        "custom": {
+                            "axisBorderShow": false,
+                            "axisCenteredZero": false,
+                            "axisColorMode": "text",
+                            "axisLabel": "",
+                            "axisPlacement": "auto",
+                            "barAlignment": 0,
+                            "barWidthFactor": 0.6,
+                            "drawStyle": "line",
+                            "fillOpacity": 0,
+                            "gradientMode": "none",
+                            "hideFrom": {
+                                "legend": false,
+                                "tooltip": false,
+                                "viz": false
+                            },
+                            "insertNulls": false,
+                            "lineInterpolation": "linear",
+                            "lineWidth": 2,
+                            "pointSize": 5,
+                            "scaleDistribution": {
+                                "type": "linear"
+                            },
+                            "showPoints": "never",
+                            "spanNulls": false,
+                            "stacking": {
+                                "group": "A",
+                                "mode": "none"
+                            },
+                            "thresholdsStyle": {
+                                "mode": "off"
+                            }
+                        },
+                        "mappings": [],
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "color": "green"
+                                },
+                                {
+                                    "color": "red",
+                                    "value": 80
+                                }
+                            ]
+                        }
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 6,
+                    "w": 12,
+                    "x": 0,
+                    "y": 18
+                },
+                "id": 11,
+                "options": {
+                    "legend": {
+                        "calcs": [],
+                        "displayMode": "list",
+                        "placement": "bottom",
+                        "showLegend": true
+                    },
+                    "tooltip": {
+                        "hideZeros": false,
+                        "mode": "single",
+                        "sort": "none"
+                    }
+                },
+                "pluginVersion": "11.5.2",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus"
+                        },
+                        "expr": "avg(rate(server_inference_duration_seconds_sum{service=~\"model-68143b2b-predictor-68143b2b-0-model-68143b2b\"}[30s])) / avg(rate(server_inference_duration_seconds_count{service=~\"model-68143b2b-predictor-68143b2b-0-model-68143b2b\"}[30s]))",
+                        "legendFormat": "Average Inference Time",
+                        "refId": "A"
+                    }
+                ],
+                "title": "Average Inference Time (Last 30s)",
+                "type": "timeseries"
+            }
+        ],
+        "preload": true,
+        "refresh": "5s",
+        "tags": [],
+        "time": {
+            "from": "now-6h",
+            "to": "now"
+        },
+        "timepicker": {},
+        "timezone": "",
+        "title": "68143b2b Metrics",
+        "uid": "68143b2b",
+        "weekStart": ""
+    }
