@@ -2,7 +2,7 @@ name: MLflow Webhook Workflow
 
 on:
   repository_dispatch:
-    types: [mlflow-model-update]  # Event type that the MLflow webhook will send
+    types: [mlflow-model-update]
 
 jobs:
   generate-and-commit-manifests:
@@ -12,8 +12,8 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v2
       with:
-        persist-credentials: false  # Prevents overwriting of credentials between steps
-        fetch-depth: 0  # Ensures the full history is fetched
+        persist-credentials: false
+        fetch-depth: 0
 
     - name: Set up Python environment
       uses: actions/setup-python@v2
@@ -27,7 +27,6 @@ jobs:
 
     - name: Run ./app/releases/gh_release.py to Generate Deployment Manifests
       run: |
-        # Ensure the release.py script is in the repository or clone the necessary repo
         cd $GITHUB_WORKSPACE
         ./app/releases/gh_release.py --image-uri ${{ github.event.client_payload.image_uri }}
 
@@ -39,14 +38,64 @@ jobs:
 
     - name: Commit and Push './app/releases/models' Folder
       env:
-        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}  # Use the default GITHUB_TOKEN
+        GITHUB_TOKEN: ${{ secrets.GH_ACTION }}  # Use the GH_ACTION secret
       run: |
         cd $GITHUB_WORKSPACE
-        # Add changes in 'releases/models' folder
         git add -A ./app/releases/models/
-        # Commit the changes
         git commit -m "Update models with new release manifests" || echo "No changes to commit"
-        # Update the remote URL to include the GITHUB_TOKEN
         git remote set-url origin https://x-access-token:$GITHUB_TOKEN@github.com/${{ github.repository }}.git
-        # Push changes
         git push origin main
+
+
+# name: MLflow Webhook Workflow
+
+# on:
+#   repository_dispatch:
+#     types: [mlflow-model-update]  # Event type that the MLflow webhook will send
+
+# jobs:
+#   generate-and-commit-manifests:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#     - name: Checkout Repository
+#       uses: actions/checkout@v2
+#       with:
+#         persist-credentials: false  # Prevents overwriting of credentials between steps
+#         fetch-depth: 0  # Ensures the full history is fetched
+
+#     - name: Set up Python environment
+#       uses: actions/setup-python@v2
+#       with:
+#         python-version: '3.x'
+
+#     - name: Install Dependencies
+#       run: |
+#         python -m pip install --upgrade pip
+#         pip install jinja2
+
+#     - name: Run ./app/releases/gh_release.py to Generate Deployment Manifests
+#       run: |
+#         # Ensure the release.py script is in the repository or clone the necessary repo
+#         cd $GITHUB_WORKSPACE
+#         ./app/releases/gh_release.py --image-uri ${{ github.event.client_payload.image_uri }}
+
+#     - name: Configure Git
+#       run: |
+#         cd $GITHUB_WORKSPACE
+#         git config --global user.name "K5W_gh_actions"
+#         git config --global user.email "akinolawilson@gmail.com"
+
+#     - name: Commit and Push './app/releases/models' Folder
+#       env:
+#         GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}  # Use the default GITHUB_TOKEN
+#       run: |
+#         cd $GITHUB_WORKSPACE
+#         # Add changes in 'releases/models' folder
+#         git add -A ./app/releases/models/
+#         # Commit the changes
+#         git commit -m "Update models with new release manifests" || echo "No changes to commit"
+#         # Update the remote URL to include the GITHUB_TOKEN
+#         git remote set-url origin https://x-access-token:$GITHUB_TOKEN@github.com/${{ github.repository }}.git
+#         # Push changes
+#         git push origin main
