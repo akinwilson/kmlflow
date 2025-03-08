@@ -35,6 +35,7 @@ jobs:
         cd $GITHUB_WORKSPACE
         git config --global user.name "K5W_gh_actions"
         git config --global user.email "akinolawilson@gmail.com"
+        git config pull.rebase true
 
     - name: Commit and Push './app/releases/models' Folder
       env:
