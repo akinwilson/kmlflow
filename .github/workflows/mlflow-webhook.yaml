@@ -38,7 +38,7 @@ jobs:
 
     - name: Commit and Push './app/releases/models' Folder
       env:
-        GITHUB_TOKEN: ${{ secrets.GH_ACTION }}  # Use the GH_ACTION secret
+        GITHUB_TOKEN: ${{ secrets.GH_ACTION_DEPLOY_KEY}}  # Use the GH_ACTION secret
       run: |
         cd $GITHUB_WORKSPACE
         git add -A ./app/releases/models/
