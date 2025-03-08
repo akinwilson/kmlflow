@@ -151,23 +151,25 @@ usage: fit.py [-h] [--vocab-size VOCAB_SIZE] [--d-model D_MODEL] [--d-kv D_KV]
 
 - [ ] Reduce current serving example down to correct template 
 
-- [ ] Grafana dashboard only handles case for single GPU deployment and vanilla deployment. Need to create dashboard for shadow deployment, A/B, Canary and Green-blue deployments. Need to also defined seldon deployment template for each other strategy. Start with creating AB testing deployment template and associated dashboard 
 
- - [ ] Proposal application works outside of iframe, but redirects inside of iframe are failing.
+- [ ] Proposal application works outside of iframe, but redirects inside of iframe are failing.
 
+- [ ]  `./app/assimilate`: develop framework for decentralised deep learning platform which rewards participants with `W8S`/ⵣ and provides exclusive access to the latest research projects. 
+ 
 - [ ] [kubeflow pipelines](https://www.kubeflow.org/docs/components/pipelines/overview/?hl=zh_cn), provide example, include in K5W UI
 
-- [ ] Customise the MLFlow server to allow for deployments via registering the model registry UI. Given a  serving image uri, let users deploy a model using either one of the strategies; single deployment, A/B testing,  canary, blue-green or shadow deployment. This should work via the UI triggering a webhook to update to the github repository which ArgoCD is watching, providing a serving image URI to be deployed. 
+- [x] Customise the MLFlow server to allow for deployments via registering the model registry UI. Given a  serving image uri, let users deploy a model 
+- [ ] [k8s-mlflow](https://github.com/akinwilson/mlflow) needs further customisation. Right now, can only deploy a model and retract. Need to customise MLFlow model registry UI, such that it displays modal once <button type="button" style="background-color: green; color: white;">Release</button> is clicked, a modal appears with potential release strategies like A/B, shadow, canary and green-blue releases.  
 
+- [ ] using either one of the strategies; single deployment, A/B testing,  canary, blue-green or shadow deployment. This should work via the UI triggering a webhook to update to the github repository which ArgoCD is watching, providing a serving image URI to be deployed. 
+ 
 
 - [ ] Consider deployment of [Harbor](https://goharbor.io/) for private remote registry management. 
 
 - [ ] Add global search engine [Meili](https://www.meilisearch.com/) to K5W UI which redirects to relevant objects; trials, endpoints, trial results, dashboard etc. 
 
 - [ ] Fix landing page of MinIO. Currently, need to programmatically create the bucket during the deployment of the cluster. When logging into the minio service, you're supposed to be redirect to the web UI for all buckets, but a blank screen appears instead. Buckets can only be viewed via a direct URL, and created programmatically like in the `./app/deploy.sh` script. Need to configure `./app/minio/deployment.yaml` to ingress objects to correctly redirect to the land page of MiniIO after after logging into. i.e 
-`https://192.168.49.2/minio/login` should redirect correctly to `http://192.168.49.2/minio/browser` but this is currently a blank screen.
-
-Rather than using a **path-based ingress** for MinIO, it needs to be change to a **host-based ingress**, such that MinIO can be served from the root / , as the application handle path-based ingresses well. 
+`https://192.168.49.2/minio/login` should redirect correctly to `http://192.168.49.2/minio/browser` but this is currently a blank screen. Rather than using a **path-based ingress** for MinIO, it needs to be change to a **host-based ingress**, such that MinIO can be served from the root / , as the application handle path-based ingresses well. 
 
 
 
