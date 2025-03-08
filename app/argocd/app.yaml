@@ -16,10 +16,3 @@ spec:
     automated:
       prune: true  # Remove old resources
       selfHeal: true  # Fix drift automatically
-  # ignoreDifferences:
-  #   - group: machinelearning.seldon.io
-  #     kind: SeldonDeployment
-  #     jsonPointers:
-  #       - /metadata/annotations
-  #       - /metadata/labels
-  #       - /metadata/managedFields
