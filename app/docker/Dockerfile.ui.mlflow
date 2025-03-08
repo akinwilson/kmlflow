@@ -1,0 +1,49 @@
+FROM python:3.11-slim-buster
+LABEL maintainer="Akin Wilson <akinola.antony.wilson@gmail.com>"
+WORKDIR /usr/src/app
+
+COPY ./entrypoint.sh ./ 
+
+RUN chmod +x /usr/src/app/entrypoint.sh
+
+# Install curl and git
+RUN apt-get update && apt-get install -y curl git
+
+# For storing artifacts 
+RUN mkdir /usr/src/app/data 
+# Make the Directory Writable for All Users
+RUN chmod -R 777 /usr/src/app
+RUN chmod -R 777 /usr/src/app/data
+RUN mkdir /usr/src/app/data/artifacts
+
+
+# Install Node.js and npm for building mlflow frontend 
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs
+
+# Install Yarn; MLflow uses yarn for managing frontend assets
+RUN npm install -g yarn
+
+# Install required Python packages
+RUN pip3 install --upgrade pip && \
+    pip3 install boto3 psycopg2-binary flask-cors
+
+# RUN pip3 install git+https://github.com/akinwilson/mlflow.git
+# RUN git clone git+https://github.com/akinwilson/mlflow.git#egg=mlflow
+
+# Install k8s-mlflow with seldon core integration and build from source 
+RUN git clone https://github.com/akinwilson/mlflow.git
+RUN pip3 install -r mlflow/requirements/core-requirements.txt
+WORKDIR /usr/src/app/mlflow/mlflow/server/js
+RUN yarn install
+RUN yarn add eslint-webpack-plugin --dev
+RUN yarn build 
+WORKDIR /usr/src/app/mlflow
+RUN pip3 install .
+WORKDIR /usr/src/app
+
+ENTRYPOINT ["/usr/src/app/entrypoint.sh"]
+
+
+# ENTRYPOINT ["mlflow","server", "--host", "0.0.0.0", "--port","5001", "--backend-store-uri", "sqlite:///meta.db"]
+# , "--host 0.0.0.0", "--port 5001", "--serve-artifacts",    "--default-artifact-root mlflow-artifacts:/", "--artifacts-destination ${MLFLOW_ARTIFACT_URI}", "--backend-store-uri ${MLFLOW_BACKEND_URI}" ]

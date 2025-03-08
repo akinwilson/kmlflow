@@ -1,6 +1,6 @@
 FROM python:3.9
 LABEL maintainer="Akin Wilson <akinola.antony.wilson@gmail.com>"
 WORKDIR /usr/src/app
-RUN pip install django kubernetes
-COPY ./ui/kmlflow/ ./ 
+RUN pip install django django-cors-headers
+COPY ./proposal/proposal/ ./ 
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

@@ -14,4 +14,4 @@ def create_proposal(request):
     else:
         form = ProposalForm()
     
-    return render(request, 'proposal/proposal.html', {'form': form})
+    return render(request, 'proposal/proposal.html', {'form': form, "page_title": "Propose"})

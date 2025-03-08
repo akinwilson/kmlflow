@@ -10,9 +10,6 @@
 Compiling templating during github actions 
 """
 
-
-
-
 import jinja2
 import argparse
 import json

@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kfp-ui-ingress
+  namespace: kubeflow
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+        - path: /kfp(/|$)(.*)
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: ml-pipeline-ui
+              port:
+                number: 80

@@ -147,14 +147,19 @@ usage: fit.py [-h] [--vocab-size VOCAB_SIZE] [--d-model D_MODEL] [--d-kv D_KV]
 ## To do March 1 2025
 
 
-- [ ] Update grafana to include sidecar for automatic dashboard config detections and updating 
 - [ ] figure out why models built with `proposal.py` can not be served, but `publish.py` can. 
+
 - [ ] Reduce current serving example down to correct template 
+
 - [ ] Grafana dashboard only handles case for single GPU deployment and vanilla deployment. Need to create dashboard for shadow deployment, A/B, Canary and Green-blue deployments. Need to also defined seldon deployment template for each other strategy. Start with creating AB testing deployment template and associated dashboard 
 
-- [ ] Add Endpoint tab in [K5W UI](https://192.168.49.2/kmlflow) which is a drop-down menu from currently live endpoints, drop-down selections provides selects iframe containing docs page of model. 
-- [ ] Deploy [kubeflow pipelines](https://www.kubeflow.org/docs/components/pipelines/overview/?hl=zh_cn), provide example, include in K5W UI
+ - [ ] Proposal application works outside of iframe, but redirects inside of iframe are failing.
+
+- [ ] [kubeflow pipelines](https://www.kubeflow.org/docs/components/pipelines/overview/?hl=zh_cn), provide example, include in K5W UI
+
 - [ ] Customise the MLFlow server to allow for deployments via registering the model registry UI. Given a  serving image uri, let users deploy a model using either one of the strategies; single deployment, A/B testing,  canary, blue-green or shadow deployment. This should work via the UI triggering a webhook to update to the github repository which ArgoCD is watching, providing a serving image URI to be deployed. 
+
+
 - [ ] Consider deployment of [Harbor](https://goharbor.io/) for private remote registry management. 
 
 - [ ] Add global search engine [Meili](https://www.meilisearch.com/) to K5W UI which redirects to relevant objects; trials, endpoints, trial results, dashboard etc. 

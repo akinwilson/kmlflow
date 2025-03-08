@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: minio-pv
+  name: ml-minio-pv
   namespace: mlflow
 spec:
   capacity:
@@ -17,7 +17,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: minio-pvc
+  name: ml-minio-pvc
   namespace: mlflow
 spec:
   accessModes:
@@ -71,7 +71,7 @@ spec:
       volumes:
         - name: minio-storage
           persistentVolumeClaim:
-            claimName: minio-pvc
+            claimName: ml-minio-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -94,7 +94,6 @@ spec:
     app: minio
   type: ClusterIP
 ---
-
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -110,10 +109,6 @@ metadata:
     nginx.ingress.kubernetes.io/enable-websockets: "true"    
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
-    # nginx.ingress.kubernetes.io/configuration-snippet: |
-    #   proxy_set_header Upgrade $http_upgrade;
-    #   proxy_set_header Connection "Upgrade";
-
 spec:
   ingressClassName: nginx
   rules:

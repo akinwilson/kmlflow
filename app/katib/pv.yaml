@@ -14,15 +14,42 @@ spec:
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: mlflow-data
+  name: kfp-pv
 spec:
   storageClassName: standard
   accessModes:
     - ReadWriteOnce
   capacity:
-    storage: 50Gi
+    storage: 20Gi
   hostPath:
-    path: /data/mlflow  # This should be the same directory you mounted in the kind cluster
+    path: /data/kfp  # This should be the same directory you mounted in the kind cluster
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: minio-pv
+  namespace: kubeflow
+spec:
+  storageClassName: standard
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 20Gi
+  hostPath:
+    path: /data/kfp  # This should be the same directory you mounted in the kind cluster
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-pv
+  namespace: kubeflow
+spec:
+  storageClassName: standard
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -37,3 +64,16 @@ spec:
   resources:
     requests:
       storage: 40Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kfp-pv
+  namespace: kubeflow
+spec:
+  storageClassName: standard
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi

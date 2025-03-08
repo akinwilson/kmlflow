@@ -33,6 +33,8 @@ SUB_PATH = os.getenv("SUB_PATH", '')
 
 # Allow embedding in iframes on the same origin
 X_FRAME_OPTIONS = 'SAMEORIGIN'
+# Allow all origins (for development only)
+CORS_ALLOW_ALL_ORIGINS = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -43,6 +45,7 @@ APPEND_SLASH = True
 INSTALLED_APPS = [
     'ui',
     "proposals",
+    'corsheaders',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -56,6 +59,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',

@@ -1,8 +1,54 @@
 apiVersion: v1
+kind: Namespace
+metadata:
+  name: mlflow
+---
+apiVersion: v1
 kind: ServiceAccount 
 metadata:
   name: mlflow-sa 
-  namespace: mlflow 
+  namespace: mlflow
+---
+apiVersion: v1
+kind: Service 
+metadata:
+  name: mlflow-service
+  namespace: mlflow
+spec:
+  type: ClusterIP
+  selector:
+    app: mlflow
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5001 
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mlflow-pv
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 50Gi
+  hostPath:
+    path: /data/mlflow  # This should be the same directory you mounted in the kind cluster
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mlflow-pvc
+  namespace: mlflow
+spec:
+  storageClassName: manual
+  volumeName: mlflow-pv  # Ensure the volumeName matches the PV name
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 40Gi
 ---
 apiVersion: apps/v1
 kind: Deployment 
@@ -25,10 +71,10 @@ spec:
       volumes:
       - name: mlflow-data
         persistentVolumeClaim:
-          claimName: mlflow-data # Reference the PVC
+          claimName: mlflow-pvc # Reference the PVC
       containers:
       - name: mlflow
-        image: akinolawilson/mlflow:latest
+        image: akinolawilson/k8s-mlflow:latest  # akinolawilson/mlflow:latest
         command: ["/usr/src/app/entrypoint.sh"]
         args: [
           "mlflow", "server",
@@ -55,26 +101,48 @@ spec:
             value: "true"
           - name: AWS_S3_SIGNATURE_VERSION
             value: "s3v4"
-
+          - name: MLFLOW_API_BASE_URL # need to adjust https://github.com/akinwilson/mlflow to parametrise the prefix, in /mlflow/skinny/mlflow/server/js/src/model-registry/components/ModelVersionTable.tsx
+            value: "/mlflow" 
           - name: MLFLOW_S3_ENDPOINT_URL
             value: "http://192.168.49.2" #"http://minio-service.mlflow.svc.cluster.local:9000" # "http://192.168.49.2/minio-api"  # ingress url for MinIO service
           - name: MLFLOW_S3_IGNORE_TLS
             value: "true"
 
+          - name: GH_ARGOCD_WEBHOOK_REPO_NAME
+            valueFrom:
+              secretKeyRef:
+                name: gh-actions
+                key: GH_ARGOCD_WEBHOOK_REPO_NAME
+
+          - name: GH_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: gh-actions
+                key: GH_TOKEN
+
+
         volumeMounts:
         - name: mlflow-data
           mountPath: /usr/src/app/data
 ---
-apiVersion: v1
-kind: PersistentVolumeClaim
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
-  name: mlflow-data
+  name: mlflow-ingress
   namespace: mlflow
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2 # preserve path after /mlflow
+    nginx.ingress.kubernetes.io/use-regex: "true" # enable regex for path matching
 spec:
-  storageClassName: standard
-  volumeName: mlflow-data  # Ensure the volumeName matches the PV name
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 40Gi
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /mlflow(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: mlflow-service
+                port:
+                  number: 5000
+

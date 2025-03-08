@@ -19,13 +19,6 @@ def landing_page(request):
         'proposals': proposals,
         'page_title': 'Proposals',
         'tags': tags,
-        'sub_tags': json.dumps(sub_tags_dict)  # Convert to JSON
+        'sub_tags': json.dumps(sub_tags_dict)  
     })
-
-
-def proposal_page(request):
-    ctx = {
-        'page_title': 'Propose',
-    }
-    return render(request, "proposal/landing.html", ctx)
 

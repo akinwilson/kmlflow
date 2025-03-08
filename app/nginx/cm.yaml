@@ -7,12 +7,12 @@ metadata:
   annotations:
     kubectl.kubernetes.io/last-applied-configuration: |
       {"apiVersion":"v1","data":{"hsts":"false"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/component":"controller","app.kubernetes.io/instance":"ingress-nginx","app.kubernetes.io/name":"ingress-nginx"},"name":"ingress-nginx-controller","namespace":"ingress-nginx"}}
-  creationTimestamp: "2025-02-26T10:36:43Z"
+  creationTimestamp: "2025-03-08T05:56:53Z"
   labels:
     app.kubernetes.io/component: controller
     app.kubernetes.io/instance: ingress-nginx
     app.kubernetes.io/name: ingress-nginx
   name: ingress-nginx-controller
   namespace: ingress-nginx
-  resourceVersion: "542"
-  uid: 87cc70f9-2607-41fe-b8e3-69504e032029
+  resourceVersion: "1779"
+  uid: 173f3d25-2053-4078-8652-8ffa95fb1ea3

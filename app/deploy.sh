@@ -1,50 +1,52 @@
 #!/usr/bin/env bash
-
 set -e
 
-# Get the directory of the script
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-
-# Default values
-CLUSTER_NAME="kmlflow-local-v1"
-HOST_VOLUME_PATH="$(dirname "$SCRIPT_DIR")/volume"
-
-
-
-
-
 # Color formatting
+# text colour
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
 MAGENTA='\033[0;95m'
 RESET='\033[0m'
-echo ""
-echo ""
+# background colour
+BBLUE='\e[44m'
+# Default values
+CLUSTER_NAME="kmlflow-local-v1"
+# Host IP 
+echo "Starting deployment  ..."
+HOST_IP="192.168.49.2" #  $(minikube ip)
+# Get the directory of the script
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-# Prompt user to accept default values or set new ones
-# read -p "Enter cluster name (default: $DEFAULT_CLUSTER_NAME): " CLUSTER_NAME
-# CLUSTER_NAME="${CLUSTER_NAME:-$DEFAULT_CLUSTER_NAME}"
+# Preferred volume path (expand ~ to the full home directory)
+DOCKER_VOLUME_PATH="~/Storage/Docker/Volumes"
+DOCKER_VOLUME_PATH=$(eval echo $DOCKER_VOLUME_PATH)
 
-# read -p "Enter volume path (default: $DEFAULT_HOST_VOLUME_PATH): " HOST_VOLUME_PATH
-# HOST_VOLUME_PATH="${HOST_VOLUME_PATH:-$DEFAULT_HOST_VOLUME_PATH}"
-# echo ""
-# echo ""
-
-if [ ! -d $HOST_VOLUME_PATH ]; then
-  mkdir -p $HOST_VOLUME_PATH;
+# If the directory doesn't exist, use fallback
+if [ ! -d "$DOCKER_VOLUME_PATH" ]; then
+  # Set DOCKER_VOLUME_PATH to the fallback location
+  DOCKER_VOLUME_PATH="$(dirname "$SCRIPT_DIR")/Volumes"
+  echo "Using fallback directory: $DOCKER_VOLUME_PATH"
 fi
 
-sudo chmod 777 $HOST_VOLUME_PATH
+# Create the directory if it doesn't exist
+if [ ! -d "$DOCKER_VOLUME_PATH" ]; then
+  mkdir -p "$DOCKER_VOLUME_PATH"
+  echo "Created directory: $DOCKER_VOLUME_PATH"
+else
+  echo "Directory already exists: $DOCKER_VOLUME_PATH"
+fi
+
+sudo chmod 777 $DOCKER_VOLUME_PATH
 
 
 echo "Using cluster name: $CLUSTER_NAME"
-echo "Using volume path: $HOST_VOLUME_PATH"
+echo "Using volume path: $DOCKER_VOLUME_PATH"
 echo ""
 echo ""
 
 # Set environment variables for Kubernetes
 export CLUSTER_NAME
-export HOST_VOLUME_PATH
+export DOCKER_VOLUME_PATH
 
 # Deploy the minikube cluster
 echo "Deploying local multi-node Kubernetes cluster using minikube ..."
@@ -64,8 +66,16 @@ echo -e "${CYAN}number of simulated nodes: 3${RESET} ... "
 echo ""
 echo ""
 
-
-minikube start -n 3 --memory $(($(free -m | awk 'NR==2{print $2}')/4)) --cpus $(($(nproc)/4)) --driver docker --container-runtime docker --gpus all --mount-string="$HOST_VOLUME_PATH:/data" --mount
+minikube start --docker-env DOCKER_VOLUME_PATH="$DOCKER_VOLUME_PATH" \
+              -n 3 \
+              --memory $(($(free -m | awk 'NR==2{print $2}')/4)) \
+              --cpus $(($(nproc)/4)) \
+              --driver docker \
+              --container-runtime docker \
+              --gpus all \
+              --mount-string="$DOCKER_VOLUME_PATH:/data" \
+              --mount
+# minikube mount "$DOCKER_VOLUME_PATH:/data"
 echo ""
 echo ""
 
@@ -90,43 +100,51 @@ echo ""
 
 
 # Wait for the Ingress NGINX controller to be ready
+echo -e "Installing ${BBLUE}Nginx${RESET} ..."
 echo "Waiting for Ingress NGINX controller to be ready..."
 while ! kubectl get pods -n ingress-nginx -l app.kubernetes.io/name=ingress-nginx -o jsonpath='{.items[*].status.conditions[?(@.type=="Ready")].status}' | grep -q "True"; do
   echo "Ingress NGINX controller not ready yet, waiting..."
   sleep 5
 done
-echo "Ingress NGINX controller is ready."
-echo ""
-echo ""
-
 echo "Customizing ingress headers ..."
-kubectl apply -f "$SCRIPT_DIR/nginx/header.yaml"
-kubectl get configmap ingress-nginx-controller -n ingress-nginx -o yaml | yq eval '.data += {"add-headers": "/etc/nginx/custom-headers.conf"}' - > "$SCRIPT_DIR/nginx/cm.yaml"
-kubectl apply -f "$SCRIPT_DIR/nginx/cm.yaml"
-kubectl patch deployment ingress-nginx-controller -n ingress-nginx --type=json -p='[
-  {
-    "op": "add",
-    "path": "/spec/template/spec/volumes/-",
-    "value": {
-      "name": "custom-headers",
-      "configMap": {
-        "name": "custom-nginx-headers"
+kubectl apply -f "$SCRIPT_DIR/nginx/headers.yaml"
+kubectl get configmap ingress-nginx-controller -n ingress-nginx -o yaml | yq eval '.data += {"add-headers": "/etc/nginx/custom-headers.conf"}' -> "$SCRIPT_DIR/nginx/cm.yaml"
+
+# Incase script is applied repeatedly; check if the volume mount for ingress already exists
+volume_exists=$(kubectl get deployment ingress-nginx-controller -n ingress-nginx -o json | jq '.spec.template.spec.volumes[] | select(.name == "custom-headers")')
+volume_mount_exists=$(kubectl get deployment ingress-nginx-controller -n ingress-nginx -o json | jq '.spec.template.spec.containers[0].volumeMounts[] | select(.name == "custom-headers")')
+
+# Apply the ingress patch only if the volume and volume mount do not exist
+if [ -z "$volume_exists" ] && [ -z "$volume_mount_exists" ]; then
+  echo "First time apply ingress patch ... "
+  kubectl patch deployment ingress-nginx-controller -n ingress-nginx --type=json -p='[
+    {
+      "op": "add",
+      "path": "/spec/template/spec/volumes/-",
+      "value": {
+        "name": "custom-headers",
+        "configMap": {
+          "name": "custom-nginx-headers"
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/spec/template/spec/containers/0/volumeMounts/-",
+      "value": {
+        "name": "custom-headers",
+        "mountPath": "/etc/nginx/custom-headers.conf",
+        "subPath": "custom-headers.conf"
       }
     }
-  },
-  {
-    "op": "add",
-    "path": "/spec/template/spec/containers/0/volumeMounts/-",
-    "value": {
-      "name": "custom-headers",
-      "mountPath": "/etc/nginx/custom-headers.conf",
-      "subPath": "custom-headers.conf"
-    }
-  }
-]'
-
-
+  ]'
+else
+  echo "Volume or volume mount already exists. Skipping ingress patch."
+fi
+kubectl apply -f "$SCRIPT_DIR/nginx/cm.yaml"
 kubectl rollout restart deployment ingress-nginx-controller -n ingress-nginx
+
+
 
 echo "Waiting for Ingress NGINX controller to be ready..."
 while ! kubectl get pods -n ingress-nginx -l app.kubernetes.io/name=ingress-nginx -o jsonpath='{.items[*].status.conditions[?(@.type=="Ready")].status}' | grep -q "True"; do
@@ -139,46 +157,48 @@ echo ""
 
 
 
-echo "Install Katib ..."
+echo -e "Installing ${BBLUE}Katib${RESET} ..."
 kubectl apply -k "github.com/kubeflow/katib.git/manifests/v1beta1/installs/katib-standalone?ref=master"
-echo ""
-
-
-echo "Deploying ingress for Katib UI ..."
 kubectl apply -f "$SCRIPT_DIR/katib/ingress.yaml"
-echo ""
-
-echo "Rolling out PVs and PVCs for Katib and MLFlow ..."
 kubectl apply -f "$SCRIPT_DIR/katib/pv.yaml"
-echo ""
-
-echo "Rolling out cluster dashboard application ..."
-kubectl apply -f "$SCRIPT_DIR/dashboard/deployment.yaml"
-echo ""
-
-echo "Creating Service Account ..."
 kubectl apply -f "$SCRIPT_DIR/katib/admin.yaml"
-echo ""
-
-echo "Allow all service accounts to view all resources ..."
 kubectl apply -f "$SCRIPT_DIR/katib/permissions.yaml"
 echo ""
+echo ""
+
+
+echo -e "Installing ${BBLUE}K8S Dashboard${RESET} ..."
+kubectl apply -f "$SCRIPT_DIR/dashboard/deployment.yaml"
+echo ""
+echo ""
 
 
 
-echo "Install Mlflow ..."
-kubectl apply -f "$SCRIPT_DIR/mlflow/namespace.yaml"
-kubectl get namespaces | grep mlflow 
+echo -e "Installing ${BBLUE}KFP${RESET} ..."
+export PIPELINE_VERSION=2.4.0
+kubectl apply -k "github.com/kubeflow/pipelines/manifests/kustomize/cluster-scoped-resources?ref=$PIPELINE_VERSION"
+kubectl wait --for condition=established --timeout=60s crd/applications.app.k8s.io
+kubectl apply -k "github.com/kubeflow/pipelines/manifests/kustomize/env/dev?ref=$PIPELINE_VERSION"
+kubectl patch deployment ml-pipeline-ui -n kubeflow --type=json -p='[{"op": "add", "path": "/spec/template/spec/containers/0/env/-", "value": {"name": "BASE_PATH", "value": "/kfp"}}]'
+kubectl apply -f "$SCRIPT_DIR/kfp/ingress.yaml"
+kubectl rollout restart deployment ml-pipeline-ui -n kubeflow
+echo ""
+echo ""
+
+
+echo -e "Installing ${BBLUE}MLFlow${RESET} ..."
+# Setting local secrets for GH actions for model deployments. There is an expectation for the LAST TWO lines of your own ../.env file to contain the your github information:
+# GH_ARGOCD_WEBOOK_REPO_NAME
+# GH_TOKEN
+ROOT_DIR="$(dirname "$SCRIPT_DIR")/"
+cat $ROOT_DIR.env | tail -n 2 | sed 's/export //g' | awk -F '=' '{print "--from-literal="$1"="$2}' | xargs kubectl create secret generic gh-actions -n mlflow
 kubectl apply -f "$SCRIPT_DIR/mlflow/deployment.yaml"
-kubectl apply -f "$SCRIPT_DIR/mlflow/service.yaml"
-kubectl apply -f "$SCRIPT_DIR/mlflow/ingress.yaml"
+echo ""
+echo ""
 
 
-
-echo "Installing MinIO..."
-
+echo -e "Installing ${BBLUE}MinIO${RESET} ..."
 kubectl apply -f "$SCRIPT_DIR/minio/deployment.yaml"
-
 echo "Waiting for MinIO to be ready..."
 while ! kubectl get pods -n mlflow -l app=minio -o jsonpath='{.items[*].status.conditions[?(@.type=="Ready")].status}' | grep -q "True"; do
   echo "MinIO not ready yet, waiting..."
@@ -190,26 +210,28 @@ echo ""
 
 
 
-echo "Install K5W UI ...."
+echo -e "Installing ${BBLUE}K5W UI${RESET} ...."
 kubectl apply -f "$SCRIPT_DIR/ui/deployment.yaml"
 echo ""
 echo ""
 
-echo "Install Grafana ...."
+echo -e "Installing ${BBLUE}Grafana${RESET}...."
 kubectl apply -f "$SCRIPT_DIR/grafana/deployment.yaml"
 echo ""
 echo ""
 
-echo "Install JupyterLab ..."
+echo -e "Installing ${BBLUE}JupyterLab${RESET}..."
 kubectl apply -f "$SCRIPT_DIR/jupyter/deployment.yaml"
 echo ""
 echo ""
 
-# echo "Install kfp ...."
-# kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/application/master/config/crd/bases/app.k8s.io_applications.yaml
+echo -e "Installing ${BBLUE}Proposals${RESET}..."
+kubectl apply -f "$SCRIPT_DIR/proposal/deployment.yaml"
+echo ""
+echo ""
 
 
-echo "Install Prometheus ...."
+echo -e "Installing ${BBLUE}Prometheus${RESET}...."
 kubectl apply -f "$SCRIPT_DIR/prometheus/deployment.yaml"
 curl https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/refs/heads/main/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml | kubectl apply -f -
 curl https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_podmonitors.yaml | kubectl apply -f -
@@ -219,18 +241,17 @@ echo ""
 
 
 # need to delete validating webhook configuration or remove it from being created 
-echo "Install seldon core ...."
+echo -e "Installing ${BBLUE}Seldon Core${RESET}...."
 kubectl apply -f "$SCRIPT_DIR/seldon/deployment.yaml"
 kubectl apply --server-side=true --force-conflicts -f "$SCRIPT_DIR/seldon/seldonDeploymentCRD.yaml"
-# kubectl apply -f "$SCRIPT_DIR/seldon/ns.yaml"
 echo ""
 echo ""
 
-echo "Installing ArgoCD ..."
+echo -e "Installing ${BBLUE}ArgoCD${RESET}..."
 
 kubectl apply -f "$SCRIPT_DIR/argocd/ns.yaml"
 kubectl apply -f "$SCRIPT_DIR/argocd/secrets.yaml"
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/refs/heads/master/manifests/install.yaml  # https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/Installing.yaml
 kubectl patch cm argocd-cmd-params-cm -n argocd --type merge -p '{"data": {"server.rootpath": "/argo/"}}'
 kubectl get cm argocd-cm -n argocd -o yaml | yq eval '.data += {"dex.config": "web:\n  headers:\n    X-Frame-Options: \"ALLOWALL\"", "users.anonymous.enabled": "true", "server.x-frame-options": "ALLOWALL"}' - > "$SCRIPT_DIR/argocd/cm.yaml"
 kubectl apply -f "$SCRIPT_DIR/argocd/cm.yaml"
@@ -239,9 +260,9 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -subj "/CN=192.168.49.2" \
   -addext "subjectAltName = IP:192.168.49.2"
 
-kubectl create secret tls argocd-tls --key="$SCRIPT_DIR/argocd/tls.key" --cert="$SCRIPT_DIR/argocd/tls.crt" -n argocd
+# error: failed to create secret secrets "argocd-tls" already exists
+# kubectl create secret tls argocd-tls --key="$SCRIPT_DIR/argocd/tls.key" --cert="$SCRIPT_DIR/argocd/tls.crt" -n argocd
 kubectl apply -f "$SCRIPT_DIR/argocd/ingress.yaml"
-
 kubectl apply -f "$SCRIPT_DIR/argocd/app.yaml"
 echo ""
 echo ""
@@ -309,6 +330,8 @@ rm 50k.jsonl
 rm 10k.jsonl 
 echo ""
 echo ""
+
+
 
 
 # Print the Ingress URLs for the services with color formatting
