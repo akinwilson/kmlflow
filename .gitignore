@@ -17,3 +17,4 @@ tls.crt
 */argocd/cm.yaml
 *.jsonl
 /tests/
+config
