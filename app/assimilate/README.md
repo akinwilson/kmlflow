@@ -1,12 +1,13 @@
-# K5W8S; An exclusive community researching, developing and deploying deep learning applications via a decentralised high-performance compute cluster    
+# K5W8S
 
 ![]( img/k5w8sjpg 'decentralised deep learning' )
 
 
 ## Overview 
-Let K5W.ai be a public server, which nodes may join. Once a node has been verified, with the client K5W application installed, the user is provided access to K5W's proposal system, and is rewarding with `W8S`, symbol ⵣ; a crypto-currency which is pegged to the value of 1GB VRAM per Hour, GBVRAM/h. Currently, the lower bound for public GPU-enabled computation platforms is 0.2$ for GBVRAM/h. Hence, if the value of W8S is maintained at around 1ⵣ ≈ 0.1$, their is an incentive to collect W8S/ⵣ since they provide you with more GBVRAM/h when compared to $ amount. 
+Consider K5W.ai an exclusive community researching, developing and deploying deep learning applications via a decentralised high-performance compute cluster,  being decentralised anyone with the hardware requirements may join and earning, develop of exploring the community. Once a node has been verified, with the client K5W application installed, the user is provided access to K5W's proposal system, and is rewarding with `W8S`, symbol `ⵣ`; a crypto-currency which is pegged to the value of 1GB VRAM per Hour, GBVRAM/h. Currently, the lower bound for public GPU-enabled computation platforms is 0.2$ for GBVRAM/h. Hence, if the value of W8S is maintained at around 1ⵣ ≈ 0.1$, their is an incentive to collect W8S/ⵣ since they provide you with more GBVRAM/h when compared to $ amount. 
 
-Let the assimilated nodes be rewarded 1*(cluster_usage_factor) W8S per hour (let cluster_usage_factor ∈ (0.8,1.4), this range is dependent on the [tokenomics](https://en.wikipedia.org/wiki/Tokenomics) of the platform ). 
+
+Let the assimilated nodes be rewarded base of 1 W8S per hour. Let where network-related factors like *productivity* ∈ (0.8,1.4) influence this baseline reward amongst other factors. These factors and their definition will make of the [tokenomics](https://en.wikipedia.org/wiki/Tokenomics) of the platform. 
 
 ## Tokenomics 
 
