@@ -82,7 +82,7 @@ echo ""
 
 # Ensure /data exists inside Minikube
 echo "Ensuring /data directory exists inside Minikube..."
-minikube ssh -- "sudo mkdir -p /data/katib && sudo mkdir -p /data/jupyter && sudo mkdir -p /data/kfp && sudo mkdir -p /data/argo && sudo mkdir -p /data/prometheus && sudo mkdir -p /data/grafana  && sudo chown -R 472:472 /data/grafana && sudo mkdir -p /data/meili && sudo mkdir -p /data/mlflow && sudo mkdir -p /data/minio && sudo chmod -R 777 /data"
+minikube ssh -- "sudo mkdir -p /data/katib && sudo mkdir -p /data/jupyter && sudo mkdir -p /data/mysql && sudo mkdir -p /data/kfp && sudo mkdir -p /data/argo && sudo mkdir -p /data/prometheus && sudo mkdir -p /data/grafana  && sudo chown -R 472:472 /data/grafana && sudo mkdir -p /data/meili && sudo mkdir -p /data/mlflow && sudo mkdir -p /data/minio && sudo chmod -R 777 /data"
 echo "/data directory is ready."
 echo ""
 echo ""
@@ -175,13 +175,37 @@ echo ""
 
 
 echo -e "Installing ${BBLUE}KFP${RESET} ..."
-export PIPELINE_VERSION=2.4.0
+export PIPELINE_VERSION=2.4.1
 kubectl apply -k "github.com/kubeflow/pipelines/manifests/kustomize/cluster-scoped-resources?ref=$PIPELINE_VERSION"
 kubectl wait --for condition=established --timeout=60s crd/applications.app.k8s.io
 kubectl apply -k "github.com/kubeflow/pipelines/manifests/kustomize/env/dev?ref=$PIPELINE_VERSION"
 kubectl patch deployment ml-pipeline-ui -n kubeflow --type=json -p='[{"op": "add", "path": "/spec/template/spec/containers/0/env/-", "value": {"name": "BASE_PATH", "value": "/kfp"}}]'
+
+
+
+kubectl patch deployment cache-server -n kubeflow --type=json -p='[{"op": "add", "path": "/spec/template/spec/containers/0/env/-", "value": {"name": "BASE_PATH", "value": "/kfp"}}]'
+kubectl patch deployment metadata-writer -n kubeflow --type=json -p='[{"op": "add", "path": "/spec/template/spec/containers/0/env/-", "value": {"name": "BASE_PATH", "value": "/kfp"}}]'
+kubectl patch deployment ml-pipeline-scheduledworkflow -n kubeflow --type=json -p='[{"op": "add", "path": "/spec/template/spec/containers/0/env/-", "value": {"name": "BASE_PATH", "value": "/kfp"}}]'
+kubectl patch deployment workflow-controller -n kubeflow --type=json -p='[{"op": "add", "path": "/spec/template/spec/containers/0/env/-", "value": {"name": "BASE_PATH", "value": "/kfp"}}]'
+kubectl patch deployment cache-deployer-deployment -n kubeflow --type=json -p='[{"op": "add", "path": "/spec/template/spec/containers/0/env/-", "value": {"name": "BASE_PATH", "value": "/kfp"}}]'
+kubectl patch deployment ml-pipeline -n kubeflow --type=json -p='[{"op": "add", "path": "/spec/template/spec/containers/0/env/-", "value": {"name": "BASE_PATH", "value": "/kfp"}}]'
+kubectl patch deployment metadata-writer -n kubeflow --type=json -p='[{"op": "add", "path": "/spec/template/spec/containers/0/env/-", "value": {"name": "BASE_PATH", "value": "/kfp"}}]'
+kubectl patch deployment metadata-grpc-deployment -n kubeflow --type=json -p='[{"op": "add", "path": "/spec/template/spec/containers/0/env/-", "value": {"name": "BASE_PATH", "value": "/kfp"}}]'
+# kubectl patch deployment proxy-agent -n kubeflow --type=json -p='[{"op": "add", "path": "/spec/template/spec/containers/0/env/0", "value": {"name": "BASE_PATH", "value": "/kfp"}}]'
+# ml-pipeline, metadata-writer, metadata-grpc-deployment, mysql, proxy-agent 
+
+
 kubectl apply -f "$SCRIPT_DIR/kfp/ingress.yaml"
 kubectl rollout restart deployment ml-pipeline-ui -n kubeflow
+kubectl rollout restart deployment metadata-envoy-deployment -n kubeflow
+kubectl rollout restart deployment cache-server -n kubeflow
+kubectl rollout restart deployment metadata-writer -n kubeflow
+kubectl rollout restart deployment ml-pipeline-scheduledworkflow -n kubeflow
+kubectl rollout restart deployment ml-pipeline-visualizationserver -n kubeflow
+kubectl rollout restart deployment workflow-controller -n kubeflow
+kubectl rollout restart deployment cache-deployer-deployment -n kubeflow
+kubectl rollout restart deployment metadata-grpc-deployment  -n kubeflow
+kubectl rollout restart deployment ml-pipeline -n kubeflow
 echo ""
 echo ""
 
