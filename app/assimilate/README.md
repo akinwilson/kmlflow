@@ -1,6 +1,6 @@
 # K5W8S; An exclusive community researching, developing and deploying deep learning applications via a decentralised high-performance compute cluster    
 
-![](img/k5w8s.jpg 'decentralised deep learning')
+![]( img/k5w8sjpg 'decentralised deep learning' )
 
 
 ## Overview 
