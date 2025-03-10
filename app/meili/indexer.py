@@ -1,4 +1,5 @@
-import kubernetes
+#!/usr/bin/env python3
+
 from kubernetes import client, config
 import meilisearch
 import json

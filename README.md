@@ -24,28 +24,35 @@ Create a python virtual environment and install the requirements:
 pip install -r requirements.txt
 ```
 
-Deploy a simulated multi-node k8s cluster alongside the platform services by running
+Export the following environment variables before deploying the cluster 
+
+```bash 
+export AWS_ACCESS_KEY_ID="minioaccesskey"
+export AWS_SECRET_ACCESS_KEY="miniosecretkey123"
+export AWS_DEFAULT_REGION="eu-west-2"
+export MINIO_ENDPOINT_URL="http://192.168.49.2" 
+```
+
+To deploy a simulated multi-node k8s cluster alongside the [K5W.ai](https://192.168.49.2/kmlflow) platform run:
 
 **WARNING**: if you have installed the `aws` cli tool, the platform deployment script `./app/deploy.sh` will alter your aws credentials to dummy variables used with MinIO. 
 
 ```bash 
 ./app/deploy.sh
 ```
+To access K5W platform please see the [Kmlflow UI](https://192.168.49.2/kmlflow).
 
-To access platform through a unified interface to all platform services, please see the [Kmlflow UI](https://192.168.49.2/kmlflow).
+Check the cli output for information on how to access the individual UIs through the web browser. 
 
-Check the cli output for information on how to access the individual UIs through a web browser. Hyperparameter experiment results are accessible from the [Katib UI](http://192.168.49.2/katib/).
+Hyperparameter experiment results are accessible from the [Katib UI](http://192.168.49.2/katib/).
 
 Along with the model registry, experiment tracking and artifact serving service component through the [MLFlow UI](http://192.168.49.2/mlflow/#).
 
 To monitor system-wide resources and services, visit the [cluster-wide dashboard UI](https://192.168.49.2/dashboard/#); you will need the access token for this; see CLI output.
 
-
 To view Grafana, visit the [Grafana UI](https://192.168.49.2/grafana/), the `username` and `password` are `admin` and `admin` respectively.  
 
-
 To view Prometheus, visit the [Prometheus UI](https://192.168.49.2/prometheus/)
-
 
 The object/artifact store deployed as a drop-in replacement for s3 (MinIO) can be viewed through 
 [MLFlow Artifact bucket UI](http://192.168.49.2/minio/browser/mlflow-artifacts) and [Fitting data bucket UI](http://192.168.49.2/minio/browser/data). You may be prompted to login to the artifact UIs, the credentials are 
@@ -58,8 +65,14 @@ To see the continuous development platform in action find [ArgoCD's UI](http://1
 ```bash
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 ```
-
 **Note** when logging into the ArgoCD UI through the centralised [Kmlflow UI](https://192.168.49.2/kmlflow), you may need to refresh the page in order for the ArgoCD UI to appear after logging in. 
+
+
+
+To develop, deploy and monitor pipelines on and to the cluster, please see [JupyterLab's UI](http://192.168.49.2/jupyter) and  [KFP's UI](http://192.168.49.2/kfp) respectively. 
+
+
+
 
 To destroy the cluster and therewith remove the platform, run:
 ```bash 
@@ -68,7 +81,16 @@ To destroy the cluster and therewith remove the platform, run:
 
 ## Usage 
 
-The `examples/` folder contains `python` code where experiments are set up, run and tracked, using the Katib and MLFlow SDKs clients. Particularly, the `track.py` script exemplifies the use fo the MLFlow client to track both the system and model metrics, artifacts and model parameters. `publish.py` demonstrates how to automate the process of constructing the serving image following the fitting routine of a model whilst relying on the MLFlow artifact server to construct this image. Finally, `proposal.py` presents how you can set up hyperparameter optimisation experiments using the Katib SDK and tracking trials of this experiment via the MLFlow server, with the option to automate the serving image constructing following each trial. 
+The `examples/` folder contains `python` code where experiments are set up, run and tracked, using the Katib and MLFlow SDKs clients. For models that are deployed via the MLFlow UI, monitoring via Prometheus has been integrated into FastAPI application server. 
+
+The `track.py` script exemplifies the use fo the MLFlow client to track system ( resource utilization), performance metrics, artifacts and model parameters. 
+
+`publish.py` demonstrates how to automate the process of constructing the serving image following the fitting routine of a model whilst relying on the MLFlow client to construct this image and MLFlow server to handle the release to the cluster via the UI using a git-ops orientated workflow. To accompany the deployed endpoint, a documentation API UI is automatically listed in [K5W.ai](https://192.168.49.2/kmlflow)'s UI, for user to test their deployed models. Furthermore, a Grafana dashboard monitoring the endpoint accompanies the model release. 
+
+
+`proposal.py` presents how you can set up hyperparameter optimisation experiments using the Katib SDK and tracking trials of the experiment via the MLFlow server, with the option to automate the serving image constructing following each trial, and deployment through the [MLFlow UI](http://192.168.49.2/mlflow/#). 
+
+
 
 To make use of the object artifact store provided by MinIO that replaces s3 for a local deployment of MLFlow, you need to export the following environment variables. 
 
