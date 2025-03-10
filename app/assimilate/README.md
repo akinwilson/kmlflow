@@ -1,6 +1,6 @@
 # W8S
 
-![]( img/k5w8sjpg 'decentralised deep learning' )
+![]( img/w8s.png 'decentralised deep learning' )
 
 
 ## Overview 
@@ -9,10 +9,14 @@ Consider K5W.ai an exclusive community researching, developing and deploying dee
 
 Let the assimilated nodes be rewarded base of 1 W8S per hour. Let where network-related factors like *productivity* ∈ (0.8,1.4) influence this baseline reward amongst other factors. These factors and their definition will make of the [tokenomics](https://en.wikipedia.org/wiki/Tokenomics) of the platform. 
 
+## Purpose 
+In this context, K5W.ai can be used a personal development environment or decentralised cloud-computing platform, specifically designed for researching, developing and hosting deep learning models. The incentive is to be rewarding in W8S for supplying GPU-enable compute resources, and allow contributors to either make use of the network with their earned W8S, accessing more GPU nodes than they could with their personal machine, or sell them to others who which to use the network. The principal is that at a cost of 1 W8S per ***GBVRAM/h*** of compute, their is an incentive to acquire and use W8S with the service provider of K5W, over  other cloud-provide using fiat currency. Hence, if configured correctly, K5W could be a autonomously organising network bounded and made  by the W8S tokens /  ⵣ currency. 
+
 ## Tokenomics 
 
-### Purpose 
-In this context, K5W.ai can be used a personal development environment or decentralised cloud-computing platform, specifically designed for researching, developing and hosting deep learning models. The incentive is to be rewarding in W8S for supplying GPU-enable compute resources, and allow contributors to either make use of the network with their earned W8S, accessing more GPU nodes than they could with their personal machine, or sell them to others who which to use the network. The principal is that at a cost of 1 W8S per GBVRAM/h of compute, it is cheaper to use W8S and K5W than any other cloud-provide with fiat currency. 
+Although touched upon slightly here, see a thorough  break down of the economics [here]( tokenomics/README.md). 
+
+## Joining the network 
 
 ### Assimilation process 
 
@@ -25,6 +29,8 @@ Technical side of how the `Node`s challenged and rewarded, surrounds the field o
 3) Voting system: A user is first provided with 20 votes they can caste day, which are reset daily, and are allow to generate 1 proposal every 3 days to the network.
 
 4) Public versus private executions: Let users of the platform 
+
+
 
 
 
