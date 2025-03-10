@@ -18,3 +18,5 @@ tls.crt
 *.jsonl
 /tests/
 config
+pipelines/
+argo-workflows/
