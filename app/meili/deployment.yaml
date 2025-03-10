@@ -76,6 +76,31 @@ spec:
   selector:
     app: meilisearch
 ---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: meilisearch-indexer
+  namespace: search
+spec:
+  schedule: "*/2 * * * *" # Run every 5 minutes
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: indexer
+            image: your-indexer-image:latest #build image with katib and grafana indexing scripts
+            env:
+            - name: MEILISEARCH_HOST
+              value: "http://meilisearch.search.svc.cluster.local:7700"
+            - name: MEILISEARCH_API_KEY
+              value: "your-meilisearch-api-key"
+            - name: GRAFANA_URL
+              value: "http://grafana.grafana.svc.cluster.local:3000"
+            - name: GRAFANA_API_KEY
+              value: "your-grafana-api-key"
+          restartPolicy: OnFailure
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
