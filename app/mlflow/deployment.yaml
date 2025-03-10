@@ -1,9 +1,4 @@
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: mlflow
----
-apiVersion: v1
 kind: ServiceAccount 
 metadata:
   name: mlflow-sa 
@@ -104,7 +99,7 @@ spec:
           - name: MLFLOW_API_BASE_URL # need to adjust https://github.com/akinwilson/mlflow to parametrise the prefix, in /mlflow/skinny/mlflow/server/js/src/model-registry/components/ModelVersionTable.tsx
             value: "/mlflow" 
           - name: MLFLOW_S3_ENDPOINT_URL
-            value: "http://192.168.49.2" #"http://minio-service.mlflow.svc.cluster.local:9000" # "http://192.168.49.2/minio-api"  # ingress url for MinIO service
+            value: "http://192.168.58.2" #"http://minio-service.mlflow.svc.cluster.local:9000" # "http://192.168.49.2/minio-api"  # ingress url for MinIO service
           - name: MLFLOW_S3_IGNORE_TLS
             value: "true"
 

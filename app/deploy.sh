@@ -192,11 +192,11 @@ kubectl create secret generic mysql-secret -n kfp \
 # reload the new credentials 
 kubectl rollout restart deployment mysql -n kfp
 
+kubectl apply -k "$SCRIPT_DIR/kfp/argo-workflows/manifests/base/crds/minimal" 
 kubectl apply -f "$SCRIPT_DIR/kfp/viewer.crd.yaml"
 kubeclt apply -f "$SCRIPT_DIR/kfp/ingress.yaml"
 kubeclt apply -f "$SCRIPT_DIR/kfp/deployment.yaml"
 kubeclt apply -f "$SCRIPT_DIR/kfp/cache-deployer.yaml"
-# k apply -k minimal
 
 
 cat <<EOF | envsubst | kubectl apply -n kfp -f -
@@ -212,7 +212,13 @@ data:
 EOF
 
 (openssl genrsa -out cert.key 2048 && openssl req -new -x509 -key cert.key -out cert.pem -subj "/CN=cache-server.kfp.svc") && kubectl create secret tls webhook-server-tls --key cert.key --cert cert.pem -n kfp && rm cert.key cert.pem
+
+echo "Refreshing KFP deployment ..."
+kubectl rollout restart deployment -n kfp
 echo -e "\n\n"
+
+
+
 
 
 echo -e "Installing ${BBLUE}MLFlow${RESET} ..."

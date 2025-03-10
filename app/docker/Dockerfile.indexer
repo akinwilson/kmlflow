@@ -2,3 +2,7 @@ FROM python:3.11-slim-buster
 LABEL maintainer="Akin Wilson <akinola.antony.wilson@gmail.com>"
 WORKDIR /usr/src/app
 COPY ./meili/indexer.py .
+RUN pip install mlflow meilisearch kubernetes requests
+
+
+CMD ["python3", "./indexer.py"] 
