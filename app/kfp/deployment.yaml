@@ -986,7 +986,7 @@ data:
   artifactRepository: |
     archiveLogs: true
     s3:
-      endpoint: "minio-service.kubeflow:9000"
+      endpoint: "minio-service.mlflow.svc.cluster.local:9000"
       bucket: "mlpipeline"
       # keyFormat is a format pattern to define how artifacts will be organized in a bucket.
       # It can reference workflow metadata variables such as workflow.namespace, workflow.name,
@@ -1027,8 +1027,8 @@ metadata:
   name: mlpipeline-minio-artifact
   namespace: kfp
 stringData:
-  accesskey: minio
-  secretkey: minio123
+  accesskey: minioaccesskey
+  secretkey: miniosecretkey123
 ---
 apiVersion: v1
 kind: Secret
@@ -1038,8 +1038,8 @@ metadata:
   name: mysql-secret
   namespace: kfp
 stringData:
-  password: ""
-  username: root
+  password: admin
+  username: admin
 ---
 apiVersion: v1
 kind: Service
@@ -1092,23 +1092,6 @@ spec:
     application-crd-id: kubeflow-pipelines
     component: metadata-grpc-server
   type: ClusterIP
----
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    application-crd-id: kubeflow-pipelines
-  name: minio-service
-  namespace: kfp
-spec:
-  ports:
-    - name: http
-      port: 9000
-      protocol: TCP
-      targetPort: 9000
-  selector:
-    app: minio
-    application-crd-id: kubeflow-pipelines
 ---
 apiVersion: v1
 kind: Service
@@ -1197,19 +1180,19 @@ metadata:
   namespace: kfp
 value: 1000000
 ---
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  labels:
-    application-crd-id: kubeflow-pipelines
-  name: minio-pvc
-  namespace: kfp
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 20Gi
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   labels:
+#     application-crd-id: kubeflow-pipelines
+#   name: minio-pvc
+#   namespace: kfp
+# spec:
+#   accessModes:
+#     - ReadWriteOnce
+#   resources:
+#     requests:
+#       storage: 20Gi
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -1536,67 +1519,62 @@ spec:
               type: RuntimeDefault
       serviceAccountName: kubeflow-pipelines-metadata-writer
 ---
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    app: minio
-    application-crd-id: kubeflow-pipelines
-  name: minio
-  namespace: kfp
-spec:
-  selector:
-    matchLabels:
-      app: minio
-      application-crd-id: kubeflow-pipelines
-  strategy:
-    type: Recreate
-  template:
-    metadata:
-      labels:
-        app: minio
-        application-crd-id: kubeflow-pipelines
-    spec:
-      containers:
-        - args:
-            - server
-            - /data
-          env:
-            - name: MINIO_ACCESS_KEY
-              valueFrom:
-                secretKeyRef:
-                  key: accesskey
-                  name: mlpipeline-minio-artifact
-            - name: MINIO_SECRET_KEY
-              valueFrom:
-                secretKeyRef:
-                  key: secretkey
-                  name: mlpipeline-minio-artifact
-          image: minio/minio:latest
-          name: minio
-          ports:
-            - containerPort: 9000
-          resources:
-            requests:
-              cpu: 20m
-              memory: 100Mi
-          securityContext:
-            # allowPrivilegeEscalation: false
-            # capabilities:
-            #   drop:
-            #     - ALL
-            runAsNonRoot: false
-            runAsUser: 0
-            seccompProfile:
-              type: RuntimeDefault
-          volumeMounts:
-            - mountPath: /data
-              name: data
-              subPath: minio
-      volumes:
-        - name: data
-          persistentVolumeClaim:
-            claimName: minio-pvc
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   labels:
+#     app: minio
+#     application-crd-id: kubeflow-pipelines
+#   name: minio
+#   namespace: kfp
+# spec:
+#   selector:
+#     matchLabels:
+#       app: minio
+#       application-crd-id: kubeflow-pipelines
+#   strategy:
+#     type: Recreate
+#   template:
+#     metadata:
+#       labels:
+#         app: minio
+#         application-crd-id: kubeflow-pipelines
+#     spec:
+#       containers:
+#         - args:
+#             - server
+#             - /data
+#           env:
+#             - name: MINIO_ACCESS_KEY
+#               valueFrom:
+#                 secretKeyRef:
+#                   key: accesskey
+#                   name: mlpipeline-minio-artifact
+#             - name: MINIO_SECRET_KEY
+#               valueFrom:
+#                 secretKeyRef:
+#                   key: secretkey
+#                   name: mlpipeline-minio-artifact
+#           image: minio/minio:latest
+#           name: minio
+#           ports:
+#             - containerPort: 9000
+#           resources:
+#             requests:
+#               cpu: 200m
+#               memory: 1000Mi
+#           securityContext:
+#             privileged: true
+#             seccompProfile:
+#               type: RuntimeDefault
+#           volumeMounts:
+#             - mountPath: /data
+#               name: data
+#               subPath: minio
+#       volumes:
+#         - name: data
+#           persistentVolumeClaim:
+#             claimName: minio-pvc
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -1625,12 +1603,17 @@ spec:
               value: info
             - name: PIPELINE_LOG_LEVEL
               value: "1"
-            - name: ML_PIPELINE_API_SERVICE_HOST
-              value: "192.168.58.2"  # Host IP
-            - name: ML_PIPELINE_API_SERVICE_PORT
-              value: "80"  # Ingress port (HTTP)
-            - name: ML_PIPELINE_API_BASE_URL
-              value: "http://192.168.58.2/kfp/apis"  # Ingress path for API            
+
+            
+            - name: OBJECTSTORECONFIG_ENDPOINT
+              value: "minio-service.mlflow.svc.cluster.local:9000"
+            - name: OBJECTSTORECONFIG_SECURE
+              value: "false"
+            - name: OBJECTSTORECONFIG_BUCKETNAME
+              valueFrom:
+                configMapKeyRef:
+                  key: bucketName
+                  name: pipeline-install-config
 
 
             - name: AUTO_UPDATE_PIPELINE_DEFAULT_VERSION
@@ -1642,13 +1625,13 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-            - name: OBJECTSTORECONFIG_SECURE
-              value: "false"
-            - name: OBJECTSTORECONFIG_BUCKETNAME
-              valueFrom:
-                configMapKeyRef:
-                  key: bucketName
-                  name: pipeline-install-config
+            # - name: OBJECTSTORECONFIG_SECURE
+            #   value: "false"
+            # - name: OBJECTSTORECONFIG_BUCKETNAME
+            #   valueFrom:
+            #     configMapKeyRef:
+            #       key: bucketName
+            #       name: pipeline-install-config
             - name: DBCONFIG_USER
               valueFrom:
                 secretKeyRef:
@@ -1709,6 +1692,8 @@ spec:
                 configMapKeyRef:
                   key: mysqlPort
                   name: pipeline-install-config
+
+                  
             - name: OBJECTSTORECONFIG_ACCESSKEY
               valueFrom:
                 secretKeyRef:
@@ -1719,6 +1704,8 @@ spec:
                 secretKeyRef:
                   key: secretkey
                   name: mlpipeline-minio-artifact
+
+
           image: ghcr.io/kubeflow/kfp-api-server:2.4.1
           imagePullPolicy: IfNotPresent
           livenessProbe:
@@ -1754,7 +1741,12 @@ spec:
           resources:
             requests:
               cpu: 250m
-              memory: 500Mi
+              memory: 10Gi # increased memory request
+            limits:
+              cpu: 5000m
+              memory: 50Gi # increased memory limit
+              nvidia.com/gpu: 2 # Request 2 NVIDIA GPU
+              
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -1927,18 +1919,13 @@ spec:
         - env:
             - name: VIEWER_TENSORBOARD_POD_TEMPLATE_SPEC_PATH
               value: /etc/config/viewer-pod-template.json
+
             - name: ML_PIPELINE_UI_SERVICE_HOST
-              value: "192.168.58.2"  # Host IP
-            - name: BASE_PATH
-              value: "/kfp" 
-            - name: ML_PIPELINE_UI_SERVICE_PORT
-              value: "80"  # Ingress port (HTTP)
+              value: "ml-pipeline-ui.kfp.svc.cluster.local"
             - name: ML_PIPELINE_UI_BASE_URL
-              value: "http://192.168.58.2/kfp"   # Ingress path for UI
-            - name: MINIO_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
+              value: "http://ml-pipeline-ui.kfp.svc.cluster.local/kfp"
+            - name: MINIO_ENDPOINT
+              value: "minio-service.mlflow.svc.cluster.local:9000"
             - name: MINIO_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
@@ -1949,6 +1936,10 @@ spec:
                 secretKeyRef:
                   key: secretkey
                   name: mlpipeline-minio-artifact
+
+
+
+                  
             - name: ALLOW_CUSTOM_VISUALIZATIONS
               value: "true"
             - name: FRONTEND_SERVER_NAMESPACE
@@ -2149,7 +2140,7 @@ spec:
         - args:
             - --datadir
             - /var/lib/mysql
-            - --default-authentication-plugin=mysql_native_password
+            - --default-authentication-plugin=mysql_native_password # caching_sha2_password
             - --disable-log-bin
           env:
             - name: MYSQL_ALLOW_EMPTY_PASSWORD
@@ -2164,15 +2155,8 @@ spec:
               cpu: 100m
               memory: 800Mi
           securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-            runAsGroup: 999
-            runAsNonRoot: true
-            runAsUser: 999
             seccompProfile:
-              type: RuntimeDefault
+              type: Unconfined
           volumeMounts:
             - mountPath: /var/lib/mysql
               name: mysql-persistent-storage
